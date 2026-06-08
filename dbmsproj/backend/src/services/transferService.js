@@ -1,0 +1,63 @@
+import { query } from '../database/db.js';
+import { badRequest, notFound } from '../utils/errors.js';
+import { notify } from './notificationService.js';
+
+export async function requestTransfer(memberId, copyId, destinationBranchId) {
+  const [copy] = await query(
+    `SELECT ic.*, p.title FROM inventory_copies ic 
+     JOIN publications p ON p.publication_id = ic.publication_id
+     WHERE ic.copy_id = @copyId`, 
+    { copyId }
+  );
+  if (!copy) throw notFound('Copy not found');
+  if (Number(copy.branch_id) === Number(destinationBranchId)) throw badRequest('Copy is already at that branch');
+  const [transfer] = await query(
+    `INSERT INTO branch_transfers(copy_id, source_branch_id, destination_branch_id, transfer_status, requested_date)
+     OUTPUT INSERTED.*
+     VALUES(@copyId,@source,@destination,'REQUESTED',GETDATE())`,
+    { copyId, source: copy.branch_id, destination: destinationBranchId }
+  );
+  await notify(memberId, 'TRANSFER_REQUESTED', 'Transfer requested', 'Your cross-branch transfer request was recorded.');
+  
+  await notify(null, 'TRANSFER_OUT_REQUESTED', 'Transfer Request Out', `Copy of "${copy.title}" has been requested for transfer to another branch.`, copy.branch_id);
+  await notify(null, 'TRANSFER_IN_REQUESTED', 'Incoming Transfer Request', `Copy of "${copy.title}" is requested to be transferred to your branch.`, destinationBranchId);
+
+  return transfer;
+}
+
+export async function updateTransfer(transferId, status, adminBranchId) {
+  const [transfer] = await query('SELECT * FROM branch_transfers WHERE transfer_id = @transferId', { transferId });
+  if (!transfer) throw notFound('Transfer not found');
+  if (adminBranchId && ![transfer.source_branch_id, transfer.destination_branch_id].includes(Number(adminBranchId))) {
+    throw badRequest('Admins can only process transfers touching their branch');
+  }
+  const arrival = status === 'ARRIVED' ? ', arrival_date = GETDATE()' : '';
+  const [updated] = await query(
+    `UPDATE branch_transfers SET transfer_status = @status ${arrival}
+     OUTPUT INSERTED.* WHERE transfer_id = @transferId`,
+    { transferId, status }
+  );
+  if (status === 'SHELVED' || status === 'READY_FOR_PICKUP') {
+    await query('UPDATE inventory_copies SET branch_id = @branchId, copy_status = @copyStatus WHERE copy_id = @copyId', {
+      branchId: transfer.destination_branch_id,
+      copyStatus: status === 'READY_FOR_PICKUP' ? 'ON_HOLD' : 'AVAILABLE',
+      copyId: transfer.copy_id
+    });
+  }
+  return updated;
+}
+
+export async function listTransfers(branchId = null) {
+  return query(
+    `SELECT t.*, p.title, sb.branch_name AS source_branch, db.branch_name AS destination_branch
+     FROM branch_transfers t
+     JOIN inventory_copies ic ON ic.copy_id = t.copy_id
+     JOIN publications p ON p.publication_id = ic.publication_id
+     JOIN branches sb ON sb.branch_id = t.source_branch_id
+     JOIN branches db ON db.branch_id = t.destination_branch_id
+     WHERE (@branchId IS NULL OR t.source_branch_id = @branchId OR t.destination_branch_id = @branchId)
+     ORDER BY t.requested_date DESC`,
+    { branchId }
+  );
+}
+

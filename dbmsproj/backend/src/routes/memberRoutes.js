@@ -1,0 +1,27 @@
+import { Router } from 'express';
+import * as controller from '../controllers/memberController.js';
+import { authenticate, requireRole } from '../middleware/authenticate.js';
+import { validate } from '../middleware/validate.js';
+
+export const memberRouter = Router();
+memberRouter.use(authenticate, requireRole('MEMBER'));
+memberRouter.post('/borrow', validate(controller.schemas.borrow), controller.borrowBook);
+memberRouter.post('/borrow/hold', validate(controller.schemas.borrowHold), controller.borrowHold);
+memberRouter.get('/history', controller.history);
+memberRouter.get('/fines', controller.fines);
+memberRouter.post('/reservations', validate(controller.schemas.reserve), controller.reserveBook);
+memberRouter.get('/reservations', controller.reservations);
+memberRouter.delete('/reservations/:reservationId', controller.cancelReservation);
+memberRouter.post('/switch-branch', validate(controller.schemas.switchBranch), controller.switchBranch);
+memberRouter.post('/upgrade', validate(controller.schemas.upgrade), controller.upgrade);
+memberRouter.post('/transfers', validate(controller.schemas.transfer), controller.requestTransfer);
+memberRouter.get('/transfers', controller.transfers);
+memberRouter.post('/acquisitions', validate(controller.schemas.acquisition), controller.requestAcquisition);
+memberRouter.get('/acquisitions', controller.myAcquisitions);
+memberRouter.get('/notifications', controller.notifications);
+memberRouter.patch('/notifications/:notificationId/read', controller.markNotification);
+memberRouter.post('/reviews', validate(controller.schemas.review), controller.review);
+memberRouter.get('/reviews', controller.myReviews);
+memberRouter.post('/reading-lists', validate(controller.schemas.list), controller.createReadingList);
+memberRouter.get('/reading-lists', controller.readingLists);
+memberRouter.post('/reading-lists/:listId/items', validate(controller.schemas.listItem), controller.addReadingListItem);

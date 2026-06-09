@@ -4,7 +4,7 @@ import { env } from '../config/env.js';
 
 let pool;
 let pgClient;
-const isPg = env.db.connectionString || (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'));
+export const isPg = env.db.connectionString || (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('postgres'));
 
 export async function getPool() {
   if (isPg) {
@@ -58,13 +58,7 @@ export async function query(text, inputs = {}) {
       return `(${date.trim()} + INTERVAL '${val} ${cleanUnit}s')`;
     });
 
-    // Convert OUTPUT INSERTED.col_name syntax to RETURNING col_name
-    const outputMatch = pgText.match(/OUTPUT\s+INSERTED\.(\w+)/i);
-    if (outputMatch) {
-      const colName = outputMatch[1];
-      pgText = pgText.replace(/OUTPUT\s+INSERTED\.\w+/i, ''); // remove the OUTPUT clause
-      pgText = pgText.trim() + ` RETURNING ${colName}`; // append RETURNING at the end
-    }
+
 
     // Split by semicolon to run multiple statements if present
     const statements = pgText.split(';').map(s => s.trim()).filter(s => s.length > 0);
@@ -76,6 +70,14 @@ export async function query(text, inputs = {}) {
       let stmtText = stmt;
       let valCounter = 1;
       
+      // Convert OUTPUT INSERTED.col_name or OUTPUT INSERTED.* syntax to RETURNING col_name/*
+      const outputMatch = stmtText.match(/OUTPUT\s+INSERTED\.([\w*]+)/i);
+      if (outputMatch) {
+        const colName = outputMatch[1];
+        stmtText = stmtText.replace(/OUTPUT\s+INSERTED\.[\w*]+/i, ''); // remove the OUTPUT clause
+        stmtText = stmtText.trim() + ` RETURNING ${colName}`; // append RETURNING at the end
+      }
+
       for (const key of sortedKeys) {
         const placeholder = `@${key}`;
         if (stmtText.includes(placeholder)) {

@@ -41,3 +41,20 @@ export async function markRead(memberId, notificationId) {
   );
 }
 
+export async function markAdminRead(branchId, notificationId) {
+  return query(
+    `UPDATE notifications SET read_status = 'Y'
+     OUTPUT INSERTED.*
+     WHERE notification_id = @notificationId AND branch_id = @branchId`,
+    { branchId, notificationId }
+  );
+}
+
+export async function markOwnerRead(notificationId) {
+  return query(
+    `UPDATE notifications SET read_status = 'Y'
+     OUTPUT INSERTED.*
+     WHERE notification_id = @notificationId AND member_id IS NULL AND branch_id IS NULL`,
+    { notificationId }
+  );
+}

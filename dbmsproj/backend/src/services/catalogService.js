@@ -9,15 +9,18 @@ export async function searchCatalog({ q = '', branchId = null, availableOnly = f
     `SELECT p.publication_id, p.title, p.publication_year, p.publisher_name, p.language_name,
             p.publication_type, p.popularity_score, p.publication_status, bk.isbn, bk.edition_name,
             STRING_AGG(CONCAT(a.first_name, ' ', a.last_name), ', ') AS authors,
-            COUNT(ic.copy_id) AS total_copies,
-            SUM(CASE WHEN ic.copy_status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_copies,
-            MIN(CASE WHEN ic.copy_status = 'AVAILABLE' THEN ic.branch_id END) AS first_available_branch_id
+            COUNT(DISTINCT ic.copy_id) AS total_copies,
+            SUM(DISTINCT CASE WHEN ic.copy_status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_copies,
+            MIN(CASE WHEN ic.copy_status = 'AVAILABLE' THEN ic.branch_id END) AS first_available_branch_id,
+            ROUND(AVG(CAST(r.rating_value AS FLOAT)), 1) AS avg_rating,
+            COUNT(DISTINCT r.review_id) AS review_count
      FROM publications p
      LEFT JOIN books bk ON bk.publication_id = p.publication_id
      LEFT JOIN publication_authors pa ON pa.publication_id = p.publication_id
      LEFT JOIN authors a ON a.author_id = pa.author_id
      LEFT JOIN inventory_copies ic ON ic.publication_id = p.publication_id
        AND (@branchId IS NULL OR ic.branch_id = @branchId)
+     LEFT JOIN publication_reviews r ON r.publication_id = p.publication_id
      WHERE (@q = '' OR p.title LIKE '%' + @q + '%' OR bk.isbn LIKE '%' + @q + '%' OR a.last_name LIKE '%' + @q + '%')
      GROUP BY p.publication_id, p.title, p.publication_year, p.publisher_name, p.language_name,
               p.publication_type, p.popularity_score, p.publication_status, bk.isbn, bk.edition_name

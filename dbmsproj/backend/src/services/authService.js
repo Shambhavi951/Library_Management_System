@@ -6,6 +6,7 @@ import { signAccessToken, signRefreshToken, verifyRefresh } from '../auth/tokens
 const roleByLogin = { member: 'MEMBER', admin: 'ADMIN', owner: 'OWNER' };
 
 export async function registerMember(payload) {
+  await ensureEmailAvailableForRole(payload.email, 'MEMBER');
   const [plan] = await query('SELECT membership_plan_id FROM membership_plans WHERE plan_name = @plan', {
     plan: payload.plan_name || 'STANDARD'
   });
@@ -36,6 +37,19 @@ export async function registerMember(payload) {
   );
   const account = rows.at(-1);
   return withTokens(account);
+}
+
+export async function ensureEmailAvailableForRole(email, roleType, currentAccountId = null) {
+  const existing = await query(
+    `SELECT account_id, role_type
+     FROM user_accounts
+     WHERE email = @email AND (@currentAccountId IS NULL OR account_id <> @currentAccountId)`,
+    { email, roleType, currentAccountId }
+  );
+  if (existing.some((account) => account.role_type !== roleType)) {
+    throw badRequest(`This email is already registered as a ${existing[0].role_type.toLowerCase()} account`);
+  }
+  if (existing.length) throw badRequest('An account with this email already exists');
 }
 
 export async function login({ email, password, login_type }) {
@@ -96,4 +110,3 @@ function withTokens(account) {
     refreshToken: signRefreshToken(account)
   };
 }
-

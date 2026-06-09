@@ -33,8 +33,10 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
   async function submit(event) {
     event.preventDefault();
     try {
-      const submitMethod = editingId ? 'PUT' : method;
-      const submitUrl = editingId ? `${endpoint}/${editingId}` : endpoint;
+      const editConfig = getEditConfig(endpoint, editingId);
+      const createConfig = getCreateConfig(endpoint, method);
+      const submitMethod = editingId ? editConfig.method : createConfig.method;
+      const submitUrl = editingId ? editConfig.url : createConfig.url;
       await api(submitUrl, { method: submitMethod, body: cast(values) });
       setMessage({ text: editingId ? 'Changes Saved' : 'Saved', type: 'success' });
       setEditingId(null);
@@ -46,13 +48,13 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
   }
 
   function getRowId(row) {
-    return row.member_id || row.account_id || row.publication_id || row.id || row.copy_id || row.transfer_id || row.acquisition_request_id || row.reading_list_id || row.review_id;
+    return row.member_id || row.account_id || row.branch_id || row.reservation_id || row.publication_id || row.id || row.copy_id || row.transfer_id || row.acquisition_request_id || row.reading_list_id || row.review_id || row.notification_id;
   }
 
   function startEdit(row) {
     const id = getRowId(row);
     setEditingId(id);
-    setValues(Object.fromEntries(form.map((f) => [f.name, f.name === 'password' ? '' : row[f.name] ?? ''])));
+    setValues(Object.fromEntries(form.map((f) => [f.name, f.name === 'password' ? '' : getFormValue(row, f.name)])));
   }
 
   function cancelEdit() {
@@ -84,6 +86,20 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
       setMessage({ text: err.message, type: 'error' });
     }
   }
+
+  async function runRowAction(action, row) {
+    if (action.confirm && !confirm(action.confirm(row))) return;
+    try {
+      await api(action.url(row), { method: action.method || 'POST', body: action.body?.(row) });
+      setMessage({ text: action.success || 'Updated', type: 'success' });
+      await load();
+    } catch (err) {
+      setMessage({ text: err.message, type: 'error' });
+    }
+  }
+
+  const rowActions = getRowActions(endpoint, title);
+  const canEdit = Boolean(form && isEditableEndpoint(endpoint, title));
 
   return (
     <>
@@ -119,23 +135,26 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
             <thead>
               <tr>
                 {columns.map((c) => <th key={c}>{c.replaceAll('_', ' ').toUpperCase()}</th>)}
-                {(form || title === 'Notifications') && !readOnly && <th>ACTIONS</th>}
+                {(canEdit || rowActions.length || title === 'Notifications') && !readOnly && <th>ACTIONS</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, i) => (
                 <tr key={getRowId(row) || i}>
                   {columns.map((c) => <td key={c}>{String(row[c] ?? row[toSnake(c)] ?? '')}</td>)}
-                  {(form || title === 'Notifications') && !readOnly && (
+                  {(canEdit || rowActions.length || title === 'Notifications') && !readOnly && (
                     <td>
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        {form && <button className="btn btn-sm" onClick={() => startEdit(row)}>Edit</button>}
+                        {canEdit && <button className="btn btn-sm" onClick={() => startEdit(row)}>Edit</button>}
                         {row.copy_status === 'BORROWED' && (
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => handleReturn(row)}>Return</button>
                         )}
                         {row.notification_type === 'BOOK_READY_ADMIN' && row.read_status !== 'Y' && (
                           <button className="btn btn-sm btn-primary" type="button" onClick={() => handleApproveBorrowal(row)}>Approve Borrowal</button>
                         )}
+                        {rowActions.filter((action) => !action.show || action.show(row)).map((action) => (
+                          <button className={`btn btn-sm ${action.variant || ''}`} type="button" key={action.label} onClick={() => runRowAction(action, row)}>{action.label}</button>
+                        ))}
                       </div>
                     </td>
                   )}
@@ -153,4 +172,125 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
 function toSnake(text) { return text.toLowerCase().replaceAll(' ', '_'); }
 function cast(values) {
   return Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v !== '' && !Number.isNaN(Number(v)) && k.endsWith('_id') ? Number(v) : v]));
+}
+
+function getFormValue(row, fieldName) {
+  const aliases = {
+    title: 'requested_title',
+    author: 'requested_author',
+    isbn: 'requested_isbn'
+  };
+  return row[fieldName] ?? row[aliases[fieldName]] ?? '';
+}
+
+function getCreateConfig(endpoint, fallbackMethod) {
+  if (endpoint === '/admin/inventory') return { url: '/admin/copies', method: 'POST' };
+  if (endpoint === '/catalog/branches') return { url: '/owner/branches', method: 'POST' };
+  return { url: endpoint, method: fallbackMethod };
+}
+
+function getEditConfig(endpoint, id) {
+  if (endpoint === '/admin/inventory') return { url: `/admin/copies/${id}`, method: 'PATCH' };
+  if (endpoint === '/member/reviews') return { url: '/member/reviews', method: 'POST' };
+  if (endpoint === '/member/acquisitions') return { url: `/member/acquisitions/${id}`, method: 'PUT' };
+  return { url: `${endpoint}/${id}`, method: 'PUT' };
+}
+
+function isEditableEndpoint(endpoint, title) {
+  if (title === 'Quality Checks') return false;
+  return [
+    '/member/reading-lists',
+    '/member/reviews',
+    '/member/acquisitions',
+    '/admin/inventory',
+    '/admin/publications',
+    '/admin/members',
+    '/owner/members',
+    '/owner/admins'
+  ].includes(endpoint);
+}
+
+function getRowActions(endpoint, title) {
+  const actions = [];
+  if (endpoint === '/member/reservations') {
+    actions.push({
+      label: 'Cancel',
+      method: 'DELETE',
+      url: (row) => `/member/reservations/${row.reservation_id}`,
+      show: (row) => ['QUEUED', 'ON_HOLD'].includes(row.reservation_status),
+      confirm: (row) => `Cancel reservation for "${row.title || 'this title'}"?`,
+      success: 'Reservation canceled'
+    });
+  }
+  if (endpoint === '/member/transfers') {
+    actions.push({
+      label: 'Cancel',
+      method: 'DELETE',
+      url: (row) => `/member/transfers/${row.transfer_id}`,
+      show: (row) => ['REQUESTED', 'APPROVED'].includes(row.transfer_status),
+      confirm: (row) => `Cancel transfer for "${row.title || 'this copy'}"?`,
+      success: 'Transfer canceled'
+    });
+  }
+  if (endpoint === '/member/reading-lists') {
+    actions.push({ label: 'Delete', method: 'DELETE', url: (row) => `/member/reading-lists/${row.reading_list_id}`, confirm: (row) => `Delete reading list "${row.list_name}"?`, success: 'Reading list deleted' });
+  }
+  if (endpoint === '/member/reviews') {
+    actions.push({ label: 'Delete', method: 'DELETE', url: (row) => `/member/reviews/${row.review_id}`, confirm: () => 'Delete this review?', success: 'Review deleted' });
+  }
+  if (endpoint === '/member/acquisitions') {
+    actions.push({
+      label: 'Cancel',
+      method: 'DELETE',
+      url: (row) => `/member/acquisitions/${row.acquisition_request_id}`,
+      show: (row) => ['REQUESTED', 'UNDER_REVIEW'].includes(row.request_status),
+      confirm: (row) => `Cancel request for "${row.requested_title}"?`,
+      success: 'Acquisition request canceled'
+    });
+  }
+  if (endpoint === '/admin/inventory') {
+    actions.push({ label: 'Remove', method: 'DELETE', url: (row) => `/admin/copies/${row.copy_id}`, show: (row) => !['BORROWED', 'ON_HOLD', 'IN_TRANSIT'].includes(row.copy_status), confirm: (row) => `Remove copy #${row.copy_id}?`, success: 'Copy removed' });
+  }
+  if (endpoint === '/admin/publications') {
+    actions.push({ label: 'Delete', method: 'DELETE', url: (row) => `/admin/publications/${row.publication_id}`, confirm: (row) => `Delete publication "${row.title}"?`, success: 'Publication removed' });
+  }
+  if (endpoint === '/admin/members' || endpoint === '/owner/members') {
+    actions.push({ label: 'Deactivate', method: 'DELETE', url: (row) => `${endpoint}/${row.member_id}`, confirm: (row) => `Deactivate ${row.first_name} ${row.last_name}?`, success: 'Member deactivated' });
+  }
+  if (endpoint === '/owner/admins') {
+    actions.push({ label: 'Deactivate', method: 'DELETE', url: (row) => `/owner/admins/${row.account_id}`, confirm: (row) => `Deactivate admin ${row.username}?`, success: 'Admin deactivated' });
+  }
+  if (endpoint === '/catalog/branches') {
+    actions.push({ label: 'Deactivate', method: 'DELETE', url: (row) => `/owner/branches/${row.branch_id}`, show: (row) => row.branch_status !== 'INACTIVE', confirm: (row) => `Deactivate branch "${row.branch_name}"?`, success: 'Branch deactivated' });
+  }
+  if (title === 'Notifications') {
+    actions.push({
+      label: 'Mark Read',
+      method: 'PATCH',
+      url: (row) => `${endpoint}/${row.notification_id}/read`,
+      show: (row) => row.read_status !== 'Y',
+      success: 'Notification marked as read'
+    });
+  }
+  if (endpoint === '/admin/transfers') {
+    ['APPROVED', 'IN_TRANSIT', 'ARRIVED', 'SHELVED', 'READY_FOR_PICKUP'].forEach((status) => actions.push({
+      label: status.replaceAll('_', ' '),
+      method: 'PATCH',
+      url: (row) => `/admin/transfers/${row.transfer_id}`,
+      body: () => ({ transfer_status: status }),
+      show: (row) => row.transfer_status !== status,
+      success: 'Transfer status updated'
+    }));
+  }
+  if (endpoint === '/admin/acquisitions') {
+    ['UNDER_REVIEW', 'ORDERED', 'ARRIVED', 'CATALOGED', 'AVAILABLE', 'REJECTED'].forEach((status) => actions.push({
+      label: status.replaceAll('_', ' '),
+      method: 'PATCH',
+      url: (row) => `/admin/acquisitions/${row.acquisition_request_id}`,
+      body: () => ({ request_status: status }),
+      show: (row) => row.request_status !== status,
+      success: 'Acquisition status updated'
+    }));
+  }
+  return actions;
 }

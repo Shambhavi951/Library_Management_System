@@ -33,3 +33,14 @@ export async function memberReviews(memberId) {
     { memberId }
   );
 }
+
+export async function deleteReview(memberId, reviewId) {
+  const result = await query(
+    `DELETE FROM publication_reviews
+     OUTPUT DELETED.review_id
+     WHERE review_id = @reviewId AND member_id = @memberId`,
+    { reviewId, memberId }
+  );
+  if (!result.length) return { deleted: false };
+  return { deleted: true };
+}

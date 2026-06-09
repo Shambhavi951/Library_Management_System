@@ -11,11 +11,18 @@ export async function requestTransfer(memberId, copyId, destinationBranchId) {
   );
   if (!copy) throw notFound('Copy not found');
   if (Number(copy.branch_id) === Number(destinationBranchId)) throw badRequest('Copy is already at that branch');
+  if (!['AVAILABLE'].includes(copy.copy_status)) throw badRequest('Only available copies can be transferred');
+  const [active] = await query(
+    `SELECT TOP 1 transfer_id FROM branch_transfers
+     WHERE copy_id = @copyId AND transfer_status IN ('REQUESTED','APPROVED','IN_TRANSIT','ARRIVED','READY_FOR_PICKUP')`,
+    { copyId }
+  );
+  if (active) throw badRequest('This copy already has an active transfer');
   const [transfer] = await query(
-    `INSERT INTO branch_transfers(copy_id, source_branch_id, destination_branch_id, transfer_status, requested_date)
+    `INSERT INTO branch_transfers(copy_id, source_branch_id, destination_branch_id, transfer_status, requested_date, requested_by_member_id)
      OUTPUT INSERTED.*
-     VALUES(@copyId,@source,@destination,'REQUESTED',GETDATE())`,
-    { copyId, source: copy.branch_id, destination: destinationBranchId }
+     VALUES(@copyId,@source,@destination,'REQUESTED',GETDATE(),@memberId)`,
+    { copyId, source: copy.branch_id, destination: destinationBranchId, memberId }
   );
   await notify(memberId, 'TRANSFER_REQUESTED', 'Transfer requested', 'Your cross-branch transfer request was recorded.');
   
@@ -31,6 +38,7 @@ export async function updateTransfer(transferId, status, adminBranchId) {
   if (adminBranchId && ![transfer.source_branch_id, transfer.destination_branch_id].includes(Number(adminBranchId))) {
     throw badRequest('Admins can only process transfers touching their branch');
   }
+  assertTransferProgression(transfer.transfer_status, status);
   const arrival = status === 'ARRIVED' ? ', arrival_date = GETDATE()' : '';
   const [updated] = await query(
     `UPDATE branch_transfers SET transfer_status = @status ${arrival}
@@ -47,7 +55,27 @@ export async function updateTransfer(transferId, status, adminBranchId) {
   return updated;
 }
 
-export async function listTransfers(branchId = null) {
+export async function cancelTransfer(memberId, transferId) {
+  const [transfer] = await query(
+    `SELECT t.* FROM branch_transfers t
+     WHERE t.transfer_id = @transferId AND t.requested_by_member_id = @memberId`,
+    { transferId, memberId }
+  );
+  if (!transfer) throw notFound('Transfer not found');
+  if (!['REQUESTED', 'APPROVED'].includes(transfer.transfer_status)) {
+    throw badRequest('Only requested or approved transfers can be canceled');
+  }
+  const [updated] = await query(
+    `UPDATE branch_transfers SET transfer_status = 'CANCELED'
+     OUTPUT INSERTED.*
+     WHERE transfer_id = @transferId`,
+    { transferId }
+  );
+  await notify(memberId, 'TRANSFER_CANCELED', 'Transfer canceled', 'Your transfer request was canceled.');
+  return updated;
+}
+
+export async function listTransfers(branchId = null, memberId = null) {
   return query(
     `SELECT t.*, p.title, sb.branch_name AS source_branch, db.branch_name AS destination_branch
      FROM branch_transfers t
@@ -56,8 +84,24 @@ export async function listTransfers(branchId = null) {
      JOIN branches sb ON sb.branch_id = t.source_branch_id
      JOIN branches db ON db.branch_id = t.destination_branch_id
      WHERE (@branchId IS NULL OR t.source_branch_id = @branchId OR t.destination_branch_id = @branchId)
+       AND (@memberId IS NULL OR t.requested_by_member_id = @memberId)
      ORDER BY t.requested_date DESC`,
-    { branchId }
+    { branchId, memberId }
   );
 }
 
+function assertTransferProgression(current, next) {
+  const allowed = {
+    REQUESTED: ['APPROVED', 'CANCELED'],
+    APPROVED: ['IN_TRANSIT', 'CANCELED'],
+    IN_TRANSIT: ['ARRIVED'],
+    ARRIVED: ['SHELVED', 'READY_FOR_PICKUP'],
+    READY_FOR_PICKUP: ['SHELVED'],
+    SHELVED: [],
+    CANCELED: []
+  };
+  if (current === next) return;
+  if (!allowed[current]?.includes(next)) {
+    throw badRequest(`Cannot move transfer from ${current} to ${next}`);
+  }
+}

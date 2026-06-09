@@ -14,7 +14,7 @@ export async function switchBranch(memberId, branchId) {
   }
 
   const [member] = await query(
-    `UPDATE members SET preferred_branch_id = @branchId
+    `UPDATE members SET home_branch_id = @branchId, preferred_branch_id = @branchId
      OUTPUT INSERTED.*
      WHERE member_id = @memberId`,
     { memberId, branchId }
@@ -48,4 +48,3 @@ export async function fines(memberId) {
     { memberId }
   );
 }
-

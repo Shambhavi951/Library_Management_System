@@ -16,12 +16,18 @@ memberRouter.post('/switch-branch', validate(controller.schemas.switchBranch), c
 memberRouter.post('/upgrade', validate(controller.schemas.upgrade), controller.upgrade);
 memberRouter.post('/transfers', validate(controller.schemas.transfer), controller.requestTransfer);
 memberRouter.get('/transfers', controller.transfers);
+memberRouter.delete('/transfers/:transferId', controller.cancelTransfer);
 memberRouter.post('/acquisitions', validate(controller.schemas.acquisition), controller.requestAcquisition);
 memberRouter.get('/acquisitions', controller.myAcquisitions);
+memberRouter.put('/acquisitions/:requestId', validate(controller.schemas.acquisition), controller.updateAcquisition);
+memberRouter.delete('/acquisitions/:requestId', controller.cancelAcquisition);
 memberRouter.get('/notifications', controller.notifications);
 memberRouter.patch('/notifications/:notificationId/read', controller.markNotification);
 memberRouter.post('/reviews', validate(controller.schemas.review), controller.review);
 memberRouter.get('/reviews', controller.myReviews);
+memberRouter.delete('/reviews/:reviewId', controller.deleteReview);
 memberRouter.post('/reading-lists', validate(controller.schemas.list), controller.createReadingList);
 memberRouter.get('/reading-lists', controller.readingLists);
+memberRouter.put('/reading-lists/:listId', validate(controller.schemas.list), controller.updateReadingList);
+memberRouter.delete('/reading-lists/:listId', controller.deleteReadingList);
 memberRouter.post('/reading-lists/:listId/items', validate(controller.schemas.listItem), controller.addReadingListItem);

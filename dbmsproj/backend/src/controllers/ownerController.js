@@ -3,8 +3,10 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { created, ok } from '../utils/http.js';
 import { query } from '../database/db.js';
 import { hashPassword } from '../auth/passwords.js';
+import { badRequest } from '../utils/errors.js';
 import * as analytics from '../services/analyticsService.js';
 import * as notification from '../services/notificationService.js';
+import { ensureEmailAvailableForRole } from '../services/authService.js';
 
 export const schemas = {
   admin: Joi.object({
@@ -12,7 +14,7 @@ export const schemas = {
     username: Joi.string().required(),
     password: Joi.string().min(8).required(),
     branch_id: Joi.number().required(),
-    salary_amount: Joi.number().required(),
+    salary_amount: Joi.number().min(0).required(),
     hire_date: Joi.date().required()
   }),
   editAdmin: Joi.object({
@@ -20,15 +22,15 @@ export const schemas = {
     username: Joi.string().required(),
     password: Joi.string().min(8).allow('', null),
     branch_id: Joi.number().required(),
-    salary_amount: Joi.number().required(),
+    salary_amount: Joi.number().min(0).required(),
     hire_date: Joi.date().required()
   }),
   settings: Joi.object({
-    fine_per_day: Joi.number().required(),
-    premium_membership_cost: Joi.number().required(),
-    standard_membership_cost: Joi.number().required(),
-    standard_hold_hours: Joi.number().required(),
-    premium_hold_hours: Joi.number().required()
+    fine_per_day: Joi.number().min(0.01).max(10000).required(),
+    premium_membership_cost: Joi.number().min(0).required(),
+    standard_membership_cost: Joi.number().min(0).required(),
+    standard_hold_hours: Joi.number().integer().min(1).required(),
+    premium_hold_hours: Joi.number().integer().min(1).required()
   }),
   branch: Joi.object({
     branch_name: Joi.string().required(),
@@ -39,10 +41,18 @@ export const schemas = {
 
 export const analyticsDashboard = asyncHandler(async (req, res) => ok(res, await analytics.ownerAnalytics()));
 export const getSettings = asyncHandler(async (req, res) => ok(res, await analytics.getOwnerSettings()));
-export const settings = asyncHandler(async (req, res) => created(res, await analytics.updateOwnerSettings(req.body)));
+export const settings = asyncHandler(async (req, res) => {
+  if (Number(req.body.premium_hold_hours) < Number(req.body.standard_hold_hours)) {
+    throw badRequest('Premium hold hours cannot be less than standard hold hours');
+  }
+  created(res, await analytics.updateOwnerSettings(req.body));
+});
 export const notifications = asyncHandler(async (req, res) => ok(res, await notification.listOwnerNotifications()));
+export const markNotification = asyncHandler(async (req, res) => ok(res, await notification.markOwnerRead(Number(req.params.notificationId))));
 
 export const createAdmin = asyncHandler(async (req, res) => {
+  await ensureEmailAvailableForRole(req.body.email, 'ADMIN');
+  validateHireDate(req.body.hire_date);
   const { hash, salt } = await hashPassword(req.body.password);
   const rows = await query(
     `DECLARE @ids TABLE(id INT);
@@ -77,6 +87,8 @@ export const admins = asyncHandler(async (req, res) => ok(res, await query(
 
 export const editAdmin = asyncHandler(async (req, res) => {
   const accountId = Number(req.params.accountId);
+  await ensureEmailAvailableForRole(req.body.email, 'ADMIN', accountId);
+  validateHireDate(req.body.hire_date);
   let hash, salt;
   if (req.body.password) {
     const hashed = await hashPassword(req.body.password);
@@ -125,3 +137,45 @@ export const createBranch = asyncHandler(async (req, res) => created(res, (await
   { name: req.body.branch_name, address: req.body.address_line || null, contact: req.body.contact_number || null }
 ))[0]));
 
+
+
+
+export const deactivateAdmin = asyncHandler(async (req, res) => {
+  const accountId = Number(req.params.accountId);
+  const [admin] = await query('SELECT account_id FROM user_accounts WHERE account_id = @accountId AND role_type = \'ADMIN\'', { accountId });
+  if (!admin) throw badRequest('Admin account not found');
+  await query('UPDATE user_accounts SET active_status = \'N\' WHERE account_id = @accountId', { accountId });
+  ok(res, { deactivated: true });
+});
+
+export const deactivateBranch = asyncHandler(async (req, res) => {
+  const branchId = Number(req.params.branchId);
+  const [locks] = await query(
+    `SELECT
+       (SELECT COUNT(*) FROM members WHERE home_branch_id = @branchId AND active_status = 'Y') AS active_members,
+       (SELECT COUNT(*) FROM user_accounts WHERE branch_id = @branchId AND active_status = 'Y') AS active_accounts,
+       (SELECT COUNT(*) FROM inventory_copies WHERE branch_id = @branchId AND copy_status <> 'REMOVED') AS active_copies,
+       (SELECT COUNT(*) FROM branch_transfers WHERE (source_branch_id = @branchId OR destination_branch_id = @branchId) AND transfer_status IN ('REQUESTED','APPROVED','IN_TRANSIT','ARRIVED','READY_FOR_PICKUP')) AS active_transfers`,
+    { branchId }
+  );
+  if (locks.active_members > 0 || locks.active_accounts > 0 || locks.active_copies > 0 || locks.active_transfers > 0) {
+    throw badRequest('Cannot deactivate a branch with active people, inventory, or transfers');
+  }
+  const [branch] = await query(
+    `UPDATE branches SET branch_status = 'INACTIVE'
+     OUTPUT INSERTED.*
+     WHERE branch_id = @branchId`,
+    { branchId }
+  );
+  if (!branch) throw badRequest('Branch not found');
+  ok(res, branch);
+});
+
+function validateHireDate(hireDate) {
+  const parsed = new Date(hireDate);
+  const now = new Date();
+  const earliest = new Date('1990-01-01T00:00:00Z');
+  if (Number.isNaN(parsed.getTime())) throw badRequest('Hire date is invalid');
+  if (parsed > now) throw badRequest('Hire date cannot be in the future');
+  if (parsed < earliest) throw badRequest('Hire date is too far in the past');
+}

@@ -1,4 +1,5 @@
 import { query } from '../database/db.js';
+import { badRequest } from '../utils/errors.js';
 
 export async function branchAnalytics(branchId) {
   const [summary] = await query(
@@ -40,16 +41,35 @@ export async function ownerAnalytics() {
 }
 
 export async function updateOwnerSettings(payload) {
+  const fine = Number(payload.fine_per_day);
+  const premium = Number(payload.premium_membership_cost);
+  const standard = Number(payload.standard_membership_cost);
+  const stdHold = Number(payload.standard_hold_hours);
+  const premHold = Number(payload.premium_hold_hours);
+
+  if (!fine || fine <= 0)
+    throw badRequest('Fine per day must be a positive number');
+  if (fine > 10000)
+    throw badRequest('Fine per day cannot exceed ₹10,000');
+  if (standard < 0 || premium < 0)
+    throw badRequest('Membership costs cannot be negative');
+  if (premium < standard)
+    throw badRequest('Premium membership cost must be at least as much as Standard');
+  if (stdHold <= 0 || premHold <= 0)
+    throw badRequest('Hold duration hours must be positive');
+  if (premHold < stdHold)
+    throw badRequest('Premium hold hours must be at least as long as Standard hold hours');
+
   const [settings] = await query(
     `INSERT INTO owner_settings(fine_per_day,premium_membership_cost,standard_membership_cost,standard_hold_hours,premium_hold_hours)
      OUTPUT INSERTED.*
      VALUES(@fine,@premium,@standard,@standardHold,@premiumHold)`,
     {
-      fine: payload.fine_per_day,
-      premium: payload.premium_membership_cost,
-      standard: payload.standard_membership_cost,
-      standardHold: payload.standard_hold_hours,
-      premiumHold: payload.premium_hold_hours
+      fine,
+      premium,
+      standard,
+      standardHold: stdHold,
+      premiumHold: premHold
     }
   );
   return settings;

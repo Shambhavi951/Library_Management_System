@@ -34,6 +34,24 @@ export async function addItem(memberId, listId, publicationId) {
   return item;
 }
 
+export async function updateList(memberId, listId, payload) {
+  const [updated] = await query(
+    `UPDATE reading_lists
+     SET list_name = @name, visibility_status = @visibility
+     OUTPUT INSERTED.*
+     WHERE reading_list_id = @listId AND member_id = @memberId`,
+    {
+      memberId,
+      listId,
+      name: payload.list_name,
+      visibility: payload.visibility_status || 'PRIVATE'
+    }
+  );
+  if (!updated) throw badRequest('Reading list not found');
+  return updated;
+}
+
+
 export async function lists(memberId) {
   return query(
     `SELECT rl.*, COUNT(rli.item_id) AS item_count
@@ -46,3 +64,16 @@ export async function lists(memberId) {
   );
 }
 
+export async function deleteList(memberId, listId) {
+  const [list] = await query('SELECT * FROM reading_lists WHERE reading_list_id = @listId AND member_id = @memberId', {
+    listId,
+    memberId
+  });
+  if (!list) throw badRequest('Reading list not found');
+  await query(
+    `DELETE FROM reading_list_items WHERE reading_list_id = @listId;
+     DELETE FROM reading_lists WHERE reading_list_id = @listId`,
+    { listId }
+  );
+  return { deleted: true };
+}

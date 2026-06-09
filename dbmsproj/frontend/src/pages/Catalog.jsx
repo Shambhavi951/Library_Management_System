@@ -4,6 +4,41 @@ import BookCover from '../components/BookCover.jsx';
 import { api } from '../api/client.js';
 import { displayBranch } from '../utils/branches.js';
 
+function StarRating({ avg, count }) {
+  if (!count || count === 0) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px', minHeight: '18px' }}>
+        <span style={{ fontSize: '12px', color: 'var(--ink-soft)', fontFamily: 'var(--font-body)', fontStyle: 'italic' }}>
+          No reviews yet
+        </span>
+      </div>
+    );
+  }
+
+  const rating = parseFloat(avg) || 0;
+  const full  = Math.floor(rating);
+  const half  = rating - full >= 0.5 ? 1 : 0;
+  const empty = 5 - full - half;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px' }}>
+      <span style={{ letterSpacing: '1px', fontSize: '14px', lineHeight: 1 }}>
+        {'★'.repeat(full)}
+        {half ? '½' : ''}
+        <span style={{ color: 'var(--parchment-3)' }}>{'★'.repeat(empty)}</span>
+      </span>
+      <span style={{
+        fontFamily: 'var(--font-caps)',
+        fontSize: '10px',
+        letterSpacing: '.18em',
+        color: 'var(--ink-soft)'
+      }}>
+        {rating.toFixed(1)} ({count} {count === 1 ? 'review' : 'reviews'})
+      </span>
+    </div>
+  );
+}
+
 export default function Catalog({ publicMode = false }) {
   const [q, setQ] = useState('');
   const [books, setBooks] = useState([]);
@@ -43,6 +78,7 @@ export default function Catalog({ publicMode = false }) {
             <div className="book-info">
               <div className="book-info-title">{book.title}</div>
               <div className="book-info-author">{book.authors || 'Unknown author'}</div>
+              <StarRating avg={book.avg_rating} count={book.review_count} />
               <span className={`status-pill ${book.available_copies > 0 ? 'ok' : 'n'}`}>{book.available_copies || 0} available</span>
               {!publicMode && <div className="btn-row">
                 <button className="btn btn-sm btn-primary" onClick={() => action('/member/borrow', { publication_id: book.publication_id, branch_id: Number(branchId || book.first_available_branch_id || 1) }, 'Borrowed successfully')}>Borrow</button>

@@ -1,4 +1,5 @@
 import { query } from '../database/db.js';
+import { badRequest, notFound } from '../utils/errors.js';
 import { notify } from './notificationService.js';
 
 export async function createRequest(memberId, payload) {
@@ -11,7 +12,7 @@ export async function createRequest(memberId, payload) {
       title: payload.title,
       author: payload.author,
       isbn: payload.isbn || null,
-      branchId: payload.preferred_branch_id,
+      branchId: payload.branch_id,
       priority: payload.priority_level || 'NORMAL'
     }
   );
@@ -43,9 +44,59 @@ export async function updateRequestStatus(requestId, status) {
   return request;
 }
 
+export async function cancelRequest(memberId, requestId) {
+  const [request] = await query(
+    `SELECT * FROM acquisition_requests
+     WHERE acquisition_request_id = @requestId AND member_id = @memberId`,
+    { requestId, memberId }
+  );
+  if (!request) throw notFound('Acquisition request not found');
+  if (!['REQUESTED', 'UNDER_REVIEW'].includes(request.request_status)) {
+    throw badRequest('Only requested or under-review acquisitions can be canceled');
+  }
+  const [updated] = await query(
+    `UPDATE acquisition_requests SET request_status = 'CANCELED'
+     OUTPUT INSERTED.*
+     WHERE acquisition_request_id = @requestId`,
+    { requestId }
+  );
+  return updated;
+}
+
+export async function updateMemberRequest(memberId, requestId, payload) {
+  const [request] = await query(
+    `SELECT * FROM acquisition_requests
+     WHERE acquisition_request_id = @requestId AND member_id = @memberId`,
+    { requestId, memberId }
+  );
+  if (!request) throw notFound('Acquisition request not found');
+  if (!['REQUESTED', 'UNDER_REVIEW'].includes(request.request_status)) {
+    throw badRequest('Only requested or under-review acquisitions can be updated');
+  }
+  const [updated] = await query(
+    `UPDATE acquisition_requests
+     SET requested_title = @title,
+         requested_author = @author,
+         requested_isbn = @isbn,
+         preferred_branch_id = @branchId,
+         priority_level = @priority
+     OUTPUT INSERTED.*
+     WHERE acquisition_request_id = @requestId`,
+    {
+      requestId,
+      title: payload.title,
+      author: payload.author,
+      isbn: payload.isbn || null,
+      branchId: payload.branch_id,
+      priority: payload.priority_level || 'NORMAL'
+    }
+  );
+  return updated;
+}
+
 export async function listRequests(memberId = null, branchId = null) {
   return query(
-    `SELECT ar.*, b.branch_name, CONCAT(m.first_name,' ',m.last_name) AS requester
+    `SELECT ar.*, ar.preferred_branch_id AS branch_id, b.branch_name, CONCAT(m.first_name,' ',m.last_name) AS requester
      FROM acquisition_requests ar
      LEFT JOIN branches b ON b.branch_id = ar.preferred_branch_id
      LEFT JOIN members m ON m.member_id = ar.member_id
@@ -55,4 +106,3 @@ export async function listRequests(memberId = null, branchId = null) {
     { memberId, branchId }
   );
 }
-

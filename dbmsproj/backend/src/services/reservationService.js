@@ -4,17 +4,17 @@ import { notify } from './notificationService.js';
 
 export async function reserveBook(memberId, publicationId, branchId) {
   const [memberBranchInfo] = await query(
-    `SELECT m.preferred_branch_id, b_pref.branch_name AS preferred_branch_name,
+    `SELECT m.home_branch_id, b_home.branch_name AS home_branch_name,
             b_req.branch_name AS requested_branch_name
      FROM members m
-     LEFT JOIN branches b_pref ON b_pref.branch_id = m.preferred_branch_id
+     LEFT JOIN branches b_home ON b_home.branch_id = m.home_branch_id
      LEFT JOIN branches b_req ON b_req.branch_id = @branchId
      WHERE m.member_id = @memberId`,
     { memberId, branchId }
   );
   if (!memberBranchInfo) throw notFound('Member not found');
-  if (Number(branchId) !== Number(memberBranchInfo.preferred_branch_id)) {
-    throw badRequest(`You cannot reserve a book from a different branch. Your active branch is ${memberBranchInfo.preferred_branch_name || 'your home branch'}, but you requested ${memberBranchInfo.requested_branch_name || 'another branch'}.`);
+  if (Number(branchId) !== Number(memberBranchInfo.home_branch_id)) {
+    throw badRequest(`You cannot reserve a book from a different branch. Your branch is ${memberBranchInfo.home_branch_name || 'your home branch'}, but you requested ${memberBranchInfo.requested_branch_name || 'another branch'}.`);
   }
 
   const [plan] = await query(
@@ -60,6 +60,9 @@ export async function cancelReservation(memberId, reservationId) {
     { reservationId, memberId }
   );
   if (!reservation) throw notFound('Reservation not found');
+  if (!['QUEUED', 'ON_HOLD'].includes(reservation.reservation_status)) {
+    throw badRequest('Only queued or on-hold reservations can be canceled');
+  }
   await query(`UPDATE reservation_queue SET reservation_status = 'CANCELED' WHERE reservation_id = @reservationId`, { reservationId });
   await query(
     `UPDATE reservation_queue
@@ -123,4 +126,3 @@ export async function promoteNextHold(publicationId, branchId, copyId) {
   await notify(null, 'BOOK_READY_ADMIN', 'Reserved Book Ready', `[Hold #${hold.hold_id}] Copy #${copyId} is ready for pickup by member #${next.member_id}.`, branchId);
   return hold;
 }
-

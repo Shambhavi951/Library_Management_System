@@ -34,7 +34,7 @@ const SettingsRoute = () => {
 const MembersRoute = () => {
   const { user } = useAuth();
   const endpoint = user?.role_type === 'OWNER' ? '/owner/members' : '/admin/members';
-  return <DataPage title="Manage Members" endpoint={endpoint} columns={['member_id', 'first_name', 'last_name', 'email', 'phone_number', 'plan_name', 'home_branch_name', 'preferred_branch_name', 'password_hash']} form={memberForm} actionLabel="Create Member" />;
+  return <DataPage title="Manage Members" endpoint={endpoint} columns={['member_id', 'first_name', 'last_name', 'email', 'phone_number', 'plan_name', 'home_branch_name', 'password_hash']} form={memberForm} actionLabel="Create Member" />;
 };
 
 export default function App() {
@@ -68,13 +68,13 @@ export default function App() {
         <Route path="/admins" element={<Protected roles={['OWNER']}><DataPage title="Manage Admins" endpoint="/owner/admins" columns={['account_id', 'username', 'email', 'branch_name', 'salary_amount', 'password_hash']} form={adminForm} actionLabel="Create Admin" /></Protected>} />
         <Route path="/members" element={<Protected roles={['ADMIN', 'OWNER']}><MembersRoute /></Protected>} />
         <Route path="/settings" element={<Protected roles={['OWNER', 'ADMIN']}><SettingsRoute /></Protected>} />
-        <Route path="/branches" element={<Protected roles={['OWNER']}><DataPage title="Branches" endpoint="/catalog/branches" columns={['branch_id', 'branch_name', 'address_line', 'branch_status']} /></Protected>} />
+        <Route path="/branches" element={<Protected roles={['OWNER']}><DataPage title="Branches" endpoint="/catalog/branches" columns={['branch_id', 'branch_name', 'address_line', 'branch_status']} form={branchForm} actionLabel="Create Branch" /></Protected>} />
       </Route>
     </Routes>
   );
 }
 
-const acquisitionForm = [{ name: 'title', label: 'Title' }, { name: 'author', label: 'Author' }, { name: 'isbn', label: 'ISBN' }, { name: 'preferred_branch_id', label: 'Preferred Branch Id', type: 'number', default: 1 }, { name: 'priority_level', label: 'Priority', options: [{ value: 'LOW', label: 'Low' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }] }];
+const acquisitionForm = [{ name: 'title', label: 'Title' }, { name: 'author', label: 'Author' }, { name: 'isbn', label: 'ISBN' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'priority_level', label: 'Priority', options: [{ value: 'LOW', label: 'Low' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }] }];
 const publicationForm = [{ name: 'title', label: 'Title' }, { name: 'publication_year', label: 'Year', type: 'number' }, { name: 'publisher_name', label: 'Publisher' }, { name: 'language_name', label: 'Language', default: 'English' }, { name: 'isbn', label: 'ISBN' }, { name: 'edition_name', label: 'Edition' }, { name: 'page_count', label: 'Pages', type: 'number' }];
 const readingListForm = [{ name: 'list_name', label: 'List Name' }, { name: 'visibility_status', label: 'Visibility', options: [{ value: 'PRIVATE', label: 'Private' }, { value: 'PUBLIC', label: 'Public' }] }];
 const reviewForm = [{ name: 'publication_id', label: 'Publication Id', type: 'number' }, { name: 'rating_value', label: 'Rating', type: 'number' }, { name: 'review_text', label: 'Review' }];
@@ -83,5 +83,6 @@ const copyForm = [{ name: 'publication_id', label: 'Publication Id', type: 'numb
 const qualityForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'condition', label: 'Condition', options: [{ value: 'GOOD', label: 'Good' }, { value: 'FAIR', label: 'Fair' }, { value: 'DAMAGED', label: 'Damaged' }, { value: 'LOST', label: 'Lost' }] }, { name: 'remarks', label: 'Remarks' }];
 const transferForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'destination_branch_id', label: 'Destination Branch Id', type: 'number' }];
 const adminForm = [{ name: 'username', label: 'Username' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'password', label: 'Password', type: 'password' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'salary_amount', label: 'Salary', type: 'number' }, { name: 'hire_date', label: 'Hire Date', type: 'date' }];
-const memberForm = [{ name: 'first_name', label: 'First Name' }, { name: 'last_name', label: 'Last Name' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'phone_number', label: 'Phone' }, { name: 'home_branch_id', label: 'Home Branch Id', type: 'number', default: 1 }, { name: 'preferred_branch_id', label: 'Preferred Branch Id', type: 'number', default: 1 }, { name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }, { name: 'password', label: 'Password', type: 'password' }];
+const memberForm = [{ name: 'first_name', label: 'First Name' }, { name: 'last_name', label: 'Last Name' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'phone_number', label: 'Phone' }, { name: 'home_branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }, { name: 'password', label: 'Password', type: 'password' }];
 const settingsForm = [{ name: 'fine_per_day', label: 'Fine Per Day', type: 'number' }, { name: 'premium_membership_cost', label: 'Premium Cost', type: 'number' }, { name: 'standard_membership_cost', label: 'Standard Cost', type: 'number' }, { name: 'standard_hold_hours', label: 'Standard Hold Hours', type: 'number' }, { name: 'premium_hold_hours', label: 'Premium Hold Hours', type: 'number' }];
+const branchForm = [{ name: 'branch_name', label: 'Branch Name' }, { name: 'address_line', label: 'Address' }, { name: 'contact_number', label: 'Contact Number' }];

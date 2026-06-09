@@ -8,8 +8,11 @@ adminRouter.use(authenticate, requireRole('ADMIN', 'OWNER'));
 adminRouter.get('/inventory', controller.inventoryList);
 adminRouter.get('/publications', controller.publicationsList);
 adminRouter.post('/publications', validate(controller.schemas.publication), controller.addPublication);
+adminRouter.put('/publications/:publicationId', validate(controller.schemas.publication), controller.updatePublication);
+adminRouter.delete('/publications/:publicationId', controller.removePublication);
 adminRouter.post('/copies', validate(controller.schemas.copy), controller.addCopy);
 adminRouter.patch('/copies/:copyId', validate(controller.schemas.copyPatch), controller.updateCopy);
+adminRouter.delete('/copies/:copyId', controller.removeCopy);
 adminRouter.post('/returns', validate(controller.schemas.returnBook), controller.returnBook);
 adminRouter.post('/quality-checks', validate(controller.schemas.quality), controller.qualityCheck);
 adminRouter.get('/quality-checks', controller.inventoryList);
@@ -19,11 +22,11 @@ adminRouter.get('/acquisitions', controller.acquisitionList);
 adminRouter.patch('/acquisitions/:requestId', validate(controller.schemas.acquisition), controller.updateAcquisition);
 adminRouter.get('/analytics', controller.analyticsDashboard);
 adminRouter.get('/notifications', controller.notifications);
+adminRouter.patch('/notifications/:notificationId/read', controller.markNotification);
 adminRouter.post('/approve-hold', validate(controller.schemas.approveHold), controller.approveHold);
 
 // Member CRUD for Admin
 adminRouter.get('/members', controller.membersList);
 adminRouter.post('/members', validate(controller.schemas.member), controller.createMember);
 adminRouter.put('/members/:memberId', validate(controller.schemas.member), controller.updateMember);
-
-
+adminRouter.delete('/members/:memberId', controller.deactivateMember);

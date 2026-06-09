@@ -5,17 +5,17 @@ import { promoteNextHold } from './reservationService.js';
 
 export async function borrowAvailable(memberId, publicationId, branchId) {
   const [memberBranchInfo] = await query(
-    `SELECT m.preferred_branch_id, b_pref.branch_name AS preferred_branch_name,
+    `SELECT m.home_branch_id, b_home.branch_name AS home_branch_name,
             b_req.branch_name AS requested_branch_name
      FROM members m
-     LEFT JOIN branches b_pref ON b_pref.branch_id = m.preferred_branch_id
+     LEFT JOIN branches b_home ON b_home.branch_id = m.home_branch_id
      LEFT JOIN branches b_req ON b_req.branch_id = @branchId
      WHERE m.member_id = @memberId`,
     { memberId, branchId }
   );
   if (!memberBranchInfo) throw notFound('Member not found');
-  if (Number(branchId) !== Number(memberBranchInfo.preferred_branch_id)) {
-    throw badRequest(`You cannot borrow a book from a different branch. Your active branch is ${memberBranchInfo.preferred_branch_name || 'your home branch'}, but you requested ${memberBranchInfo.requested_branch_name || 'another branch'}.`);
+  if (Number(branchId) !== Number(memberBranchInfo.home_branch_id)) {
+    throw badRequest(`You cannot borrow a book from a different branch. Your branch is ${memberBranchInfo.home_branch_name || 'your home branch'}, but you requested ${memberBranchInfo.requested_branch_name || 'another branch'}.`);
   }
 
   const [limits] = await query(
@@ -160,4 +160,3 @@ export async function memberHistory(memberId) {
     { memberId }
   );
 }
-

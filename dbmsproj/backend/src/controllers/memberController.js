@@ -21,7 +21,7 @@ export const schemas = {
     title: Joi.string().required(),
     author: Joi.string().required(),
     isbn: Joi.string().allow('', null),
-    preferred_branch_id: Joi.number().required(),
+    branch_id: Joi.number().required(),
     priority_level: Joi.string().valid('LOW', 'NORMAL', 'HIGH').default('NORMAL')
   }),
   review: Joi.object({ publication_id: Joi.number().required(), rating_value: Joi.number().min(1).max(5).required(), review_text: Joi.string().allow('', null) }),
@@ -39,13 +39,19 @@ export const switchBranch = asyncHandler(async (req, res) => ok(res, await membe
 export const upgrade = asyncHandler(async (req, res) => ok(res, await member.upgradeMembership(req.user.member_id, req.body.plan_name)));
 export const fines = asyncHandler(async (req, res) => ok(res, await member.fines(req.user.member_id)));
 export const requestTransfer = asyncHandler(async (req, res) => created(res, await transfer.requestTransfer(req.user.member_id, req.body.copy_id, req.body.destination_branch_id)));
-export const transfers = asyncHandler(async (req, res) => ok(res, await transfer.listTransfers(null)));
+export const transfers = asyncHandler(async (req, res) => ok(res, await transfer.listTransfers(null, req.user.member_id)));
+export const cancelTransfer = asyncHandler(async (req, res) => ok(res, await transfer.cancelTransfer(req.user.member_id, Number(req.params.transferId))));
 export const requestAcquisition = asyncHandler(async (req, res) => created(res, await acquisition.createRequest(req.user.member_id, req.body)));
 export const myAcquisitions = asyncHandler(async (req, res) => ok(res, await acquisition.listRequests(req.user.member_id)));
+export const updateAcquisition = asyncHandler(async (req, res) => ok(res, await acquisition.updateMemberRequest(req.user.member_id, Number(req.params.requestId), req.body)));
+export const cancelAcquisition = asyncHandler(async (req, res) => ok(res, await acquisition.cancelRequest(req.user.member_id, Number(req.params.requestId))));
 export const notifications = asyncHandler(async (req, res) => ok(res, await notification.listNotifications(req.user.member_id)));
 export const markNotification = asyncHandler(async (req, res) => ok(res, await notification.markRead(req.user.member_id, Number(req.params.notificationId))));
 export const review = asyncHandler(async (req, res) => created(res, await reviews.upsertReview(req.user.member_id, req.body)));
 export const myReviews = asyncHandler(async (req, res) => ok(res, await reviews.memberReviews(req.user.member_id)));
+export const deleteReview = asyncHandler(async (req, res) => ok(res, await reviews.deleteReview(req.user.member_id, Number(req.params.reviewId))));
 export const createReadingList = asyncHandler(async (req, res) => created(res, await lists.createList(req.user.member_id, req.body)));
+export const updateReadingList = asyncHandler(async (req, res) => ok(res, await lists.updateList(req.user.member_id, Number(req.params.listId), req.body)));
 export const addReadingListItem = asyncHandler(async (req, res) => created(res, await lists.addItem(req.user.member_id, Number(req.params.listId), req.body.publication_id)));
 export const readingLists = asyncHandler(async (req, res) => ok(res, await lists.lists(req.user.member_id)));
+export const deleteReadingList = asyncHandler(async (req, res) => ok(res, await lists.deleteList(req.user.member_id, Number(req.params.listId))));

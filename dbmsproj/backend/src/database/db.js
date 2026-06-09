@@ -13,6 +13,11 @@ export async function getPool() {
           WHERE object_id = OBJECT_ID('notifications') AND name = 'branch_id'
         )
         ALTER TABLE notifications ADD branch_id INT;
+        IF NOT EXISTS (
+          SELECT 1 FROM sys.columns 
+          WHERE object_id = OBJECT_ID('branch_transfers') AND name = 'requested_by_member_id'
+        )
+        ALTER TABLE branch_transfers ADD requested_by_member_id INT;
       `);
     } catch (err) {
       console.error('Failed to add branch_id to notifications table', err);
@@ -48,4 +53,3 @@ export function trxRequest(trx, inputs = {}) {
   Object.entries(inputs).forEach(([key, value]) => request.input(key, value));
   return request;
 }
-

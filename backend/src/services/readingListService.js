@@ -25,6 +25,11 @@ export async function addItem(memberId, listId, publicationId) {
     memberId
   });
   if (!list) throw badRequest('Reading list not found');
+  const [exists] = await query(
+    'SELECT 1 FROM reading_list_items WHERE reading_list_id = @listId AND publication_id = @publicationId',
+    { listId, publicationId }
+  );
+  if (exists) throw badRequest('This book is already in this reading list');
   const [item] = await query(
     `INSERT INTO reading_list_items(reading_list_id, publication_id)
      OUTPUT INSERTED.*

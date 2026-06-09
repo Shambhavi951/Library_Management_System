@@ -86,9 +86,23 @@ export default function Catalog({ publicMode = false }) {
     }
   }
 
-  async function handleAddToList(publicationId, listId) {
+  async function handleAddToList(publicationId, listId, bookTitle) {
     if (!listId) return;
+    const list = readingLists.find(l => Number(l.reading_list_id) === Number(listId));
+    const listName = list ? list.list_name : 'the list';
+    
     try {
+      // Fetch current items in the list to check for duplicates
+      const items = await api(`/member/reading-lists/${listId}/items`);
+      const isDuplicate = items.some(item => Number(item.publication_id) === Number(publicationId));
+      if (isDuplicate) {
+        alert(`"${bookTitle}" is already in the reading list "${listName}"!`);
+        return;
+      }
+
+      // Show alert to confirm adding the book
+      alert(`Add "${bookTitle}" to reading list "${listName}"?`);
+
       await api(`/member/reading-lists/${listId}/items`, {
         method: 'POST',
         body: { publication_id: publicationId }
@@ -165,7 +179,7 @@ export default function Catalog({ publicMode = false }) {
                       }}
                       defaultValue=""
                       onChange={(e) => {
-                        handleAddToList(book.publication_id, e.target.value);
+                        handleAddToList(book.publication_id, e.target.value, book.title);
                         e.target.value = ""; // Reset dropdown
                       }}
                     >

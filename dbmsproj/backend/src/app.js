@@ -28,7 +28,7 @@ export function createApp() {
   app.use('/api', apiRouter);
 
   // Serve frontend built files statically
-  const frontendDistPath = path.join(__dirname, '../../../frontend/dist');
+  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
   app.use(express.static(frontendDistPath));
 
   // Fallback for React Router single-page app paths

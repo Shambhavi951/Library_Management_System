@@ -8,7 +8,7 @@ export async function listInventory(branchId) {
      JOIN publications p ON p.publication_id = ic.publication_id
      LEFT JOIN books bk ON bk.publication_id = p.publication_id
      JOIN branches b ON b.branch_id = ic.branch_id
-     WHERE (@branchId IS NULL OR ic.branch_id = @branchId)
+     WHERE (CAST(@branchId AS INT) IS NULL OR ic.branch_id = CAST(@branchId AS INT))
        AND ic.copy_status <> 'REMOVED'
      ORDER BY b.branch_name, p.title, ic.copy_number`,
     { branchId: branchId || null }
@@ -193,7 +193,7 @@ async function validateCopyPlacement(payload, currentCopyId = null) {
     `SELECT TOP 1 copy_id FROM inventory_copies
      WHERE publication_id = @publicationId AND branch_id = @branchId AND copy_number = @copyNumber
        AND copy_status <> 'REMOVED'
-       AND (@currentCopyId IS NULL OR copy_id <> @currentCopyId)`,
+       AND (CAST(@currentCopyId AS INT) IS NULL OR copy_id <> CAST(@currentCopyId AS INT))`,
     {
       publicationId: payload.publication_id,
       branchId: payload.branch_id,
@@ -212,7 +212,7 @@ async function validateCopyPlacement(payload, currentCopyId = null) {
        AND COALESCE(rack_number, '') = COALESCE(@rack, '')
        AND COALESCE(position_number, '') = COALESCE(@position, '')
        AND copy_status <> 'REMOVED'
-       AND (@currentCopyId IS NULL OR copy_id <> @currentCopyId)`,
+       AND (CAST(@currentCopyId AS INT) IS NULL OR copy_id <> CAST(@currentCopyId AS INT))`,
     {
       branchId: payload.branch_id,
       floor: payload.floor_number || 1,

@@ -83,8 +83,8 @@ export async function listTransfers(branchId = null, memberId = null) {
      JOIN publications p ON p.publication_id = ic.publication_id
      JOIN branches sb ON sb.branch_id = t.source_branch_id
      JOIN branches db ON db.branch_id = t.destination_branch_id
-     WHERE (@branchId IS NULL OR t.source_branch_id = @branchId OR t.destination_branch_id = @branchId)
-       AND (@memberId IS NULL OR t.requested_by_member_id = @memberId)
+     WHERE (CAST(@branchId AS INT) IS NULL OR t.source_branch_id = CAST(@branchId AS INT) OR t.destination_branch_id = CAST(@branchId AS INT))
+       AND (CAST(@memberId AS INT) IS NULL OR t.requested_by_member_id = CAST(@memberId AS INT))
      ORDER BY t.requested_date DESC`,
     { branchId, memberId }
   );

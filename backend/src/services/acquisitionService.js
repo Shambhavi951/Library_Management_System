@@ -100,8 +100,8 @@ export async function listRequests(memberId = null, branchId = null) {
      FROM acquisition_requests ar
      LEFT JOIN branches b ON b.branch_id = ar.preferred_branch_id
      LEFT JOIN members m ON m.member_id = ar.member_id
-     WHERE (@memberId IS NULL OR ar.member_id = @memberId)
-       AND (@branchId IS NULL OR ar.preferred_branch_id = @branchId)
+     WHERE (CAST(@memberId AS INT) IS NULL OR ar.member_id = CAST(@memberId AS INT))
+       AND (CAST(@branchId AS INT) IS NULL OR ar.preferred_branch_id = CAST(@branchId AS INT))
      ORDER BY ar.acquisition_request_id DESC`,
     { memberId, branchId }
   );

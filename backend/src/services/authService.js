@@ -43,7 +43,7 @@ export async function ensureEmailAvailableForRole(email, roleType, currentAccoun
   const existing = await query(
     `SELECT account_id, role_type
      FROM user_accounts
-     WHERE email = @email AND (@currentAccountId IS NULL OR account_id <> @currentAccountId)`,
+     WHERE email = @email AND (CAST(@currentAccountId AS INT) IS NULL OR account_id <> CAST(@currentAccountId AS INT))`,
     { email, roleType, currentAccountId }
   );
   if (existing.some((account) => account.role_type !== roleType)) {

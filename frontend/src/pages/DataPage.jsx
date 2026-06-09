@@ -8,6 +8,37 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
   const [values, setValues] = useState(defaultValues);
   const [message, setMessage] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const [expandedListId, setExpandedListId] = useState(null);
+  const [listItems, setListItems] = useState([]);
+
+  async function toggleExpandList(row) {
+    const listId = row.reading_list_id;
+    if (expandedListId === listId) {
+      setExpandedListId(null);
+      setListItems([]);
+    } else {
+      setExpandedListId(listId);
+      try {
+        const items = await api(`/member/reading-lists/${listId}/items`);
+        setListItems(items);
+      } catch (err) {
+        setMessage({ text: err.message, type: 'error' });
+      }
+    }
+  }
+
+  async function handleRemoveItem(listId, itemId) {
+    if (!confirm('Remove this book from the reading list?')) return;
+    try {
+      await api(`/member/reading-lists/${listId}/items/${itemId}`, { method: 'DELETE' });
+      setMessage({ text: 'Book removed from list', type: 'success' });
+      const items = await api(`/member/reading-lists/${listId}/items`);
+      setListItems(items);
+      await load();
+    } catch (err) {
+      setMessage({ text: err.message, type: 'error' });
+    }
+  }
 
   async function load() {
     if (!endpoint) return;
@@ -135,36 +166,90 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
             <thead>
               <tr>
                 {columns.map((c) => <th key={c}>{c.replaceAll('_', ' ').toUpperCase()}</th>)}
-                {(canEdit || rowActions.length || title === 'Notifications') && !readOnly && <th>ACTIONS</th>}
+                {(canEdit || rowActions.length || title === 'Notifications' || endpoint === '/member/reading-lists') && !readOnly && <th>ACTIONS</th>}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
-                <tr key={getRowId(row) || i}>
-                  {columns.map((c) => <td key={c}>{String(row[c] ?? row[toSnake(c)] ?? '')}</td>)}
-                  {(canEdit || rowActions.length || title === 'Notifications') && !readOnly && (
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        {canEdit && <button className="btn btn-sm" onClick={() => startEdit(row)}>Edit</button>}
-                        {row.copy_status === 'BORROWED' && (
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => handleReturn(row)}>Return</button>
-                        )}
-                        {row.notification_type === 'BOOK_READY_ADMIN' && row.read_status !== 'Y' && (
-                          <button className="btn btn-sm btn-primary" type="button" onClick={() => handleApproveBorrowal(row)}>Approve Borrowal</button>
-                        )}
-                        {rowActions.filter((action) => !action.show || action.show(row)).map((action) => (
-                          <button className={`btn btn-sm ${action.variant || ''}`} type="button" key={action.label} onClick={() => runRowAction(action, row)}>{action.label}</button>
-                        ))}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
+              {rows.map((row, i) => {
+                const rowId = getRowId(row);
+                const isExpanded = expandedListId === rowId;
+                return (
+                  <tr key={rowId || i}>
+                    {columns.map((c) => <td key={c}>{String(row[c] ?? row[toSnake(c)] ?? '')}</td>)}
+                    {(canEdit || rowActions.length || title === 'Notifications' || endpoint === '/member/reading-lists') && !readOnly && (
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {endpoint === '/member/reading-lists' && (
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => toggleExpandList(row)}>
+                              {isExpanded ? 'Hide Books' : 'View Books'}
+                            </button>
+                          )}
+                          {canEdit && <button className="btn btn-sm" onClick={() => startEdit(row)}>Edit</button>}
+                          {row.copy_status === 'BORROWED' && (
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => handleReturn(row)}>Return</button>
+                          )}
+                          {row.notification_type === 'BOOK_READY_ADMIN' && row.read_status !== 'Y' && (
+                            <button className="btn btn-sm btn-primary" type="button" onClick={() => handleApproveBorrowal(row)}>Approve Borrowal</button>
+                          )}
+                          {rowActions.filter((action) => !action.show || action.show(row)).map((action) => (
+                            <button className={`btn btn-sm ${action.variant || ''}`} type="button" key={action.label} onClick={() => runRowAction(action, row)}>{action.label}</button>
+                          ))}
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
         {!rows.length && <div className="empty"><span className="empty-hint">NO ENTRIES</span>Nothing on this shelf yet.</div>}
       </div>
+      {expandedListId && (
+        <div className="card" style={{ marginTop: '1.5rem', border: '1px dashed var(--brown-warm)' }}>
+          <div className="card-header">
+            <div>
+              <div className="card-sub">LIST DETAILS</div>
+              <div className="card-title">Books in Reading List</div>
+            </div>
+            <button className="btn btn-sm" onClick={() => { setExpandedListId(null); setListItems([]); }}>Close Detail View</button>
+          </div>
+          <div className="table-wrap">
+            <table className="small-table">
+              <thead>
+                <tr>
+                  <th>TITLE</th>
+                  <th>PUBLISHER</th>
+                  <th>YEAR</th>
+                  <th>ISBN</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listItems.length > 0 ? (
+                  listItems.map((item) => (
+                    <tr key={item.item_id}>
+                      <td>{item.title}</td>
+                      <td>{item.publisher_name}</td>
+                      <td>{item.publication_year}</td>
+                      <td>{item.isbn}</td>
+                      <td>
+                        <button className="btn btn-sm btn-danger" type="button" onClick={() => handleRemoveItem(expandedListId, item.item_id)}>Remove</button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: 'var(--ink-subtle)' }}>
+                      No books in this list. Browse the <strong>Public Catalog</strong> or <strong>Catalog</strong> page and click <strong>"Add to List"</strong> to save books here.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   );
 }

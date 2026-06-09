@@ -77,3 +77,31 @@ export async function deleteList(memberId, listId) {
   );
   return { deleted: true };
 }
+
+export async function items(memberId, listId) {
+  const [list] = await query(
+    'SELECT * FROM reading_lists WHERE reading_list_id = @listId AND (member_id = @memberId OR visibility_status = \'PUBLIC\')',
+    { listId, memberId }
+  );
+  if (!list) throw badRequest('Reading list not found or is private');
+  return query(
+    `SELECT rli.item_id, rli.reading_list_id, p.publication_id, p.title, p.publisher_name, p.publication_year, bk.isbn
+     FROM reading_list_items rli
+     JOIN publications p ON p.publication_id = rli.publication_id
+     LEFT JOIN books bk ON bk.publication_id = p.publication_id
+     WHERE rli.reading_list_id = @listId
+     ORDER BY rli.item_id DESC`,
+    { listId }
+  );
+}
+
+export async function removeItem(memberId, listId, itemId) {
+  const [list] = await query('SELECT * FROM reading_lists WHERE reading_list_id = @listId AND member_id = @memberId', {
+    listId,
+    memberId
+  });
+  if (!list) throw badRequest('Reading list not found');
+  await query('DELETE FROM reading_list_items WHERE item_id = @itemId AND reading_list_id = @listId', { itemId, listId });
+  return { deleted: true };
+}
+

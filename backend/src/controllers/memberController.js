@@ -55,3 +55,6 @@ export const updateReadingList = asyncHandler(async (req, res) => ok(res, await 
 export const addReadingListItem = asyncHandler(async (req, res) => created(res, await lists.addItem(req.user.member_id, Number(req.params.listId), req.body.publication_id)));
 export const readingLists = asyncHandler(async (req, res) => ok(res, await lists.lists(req.user.member_id)));
 export const deleteReadingList = asyncHandler(async (req, res) => ok(res, await lists.deleteList(req.user.member_id, Number(req.params.listId))));
+export const readingListItems = asyncHandler(async (req, res) => ok(res, await lists.items(req.user.member_id, Number(req.params.listId))));
+export const removeReadingListItem = asyncHandler(async (req, res) => ok(res, await lists.removeItem(req.user.member_id, Number(req.params.listId), Number(req.params.itemId))));
+

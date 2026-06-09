@@ -31,3 +31,6 @@ memberRouter.get('/reading-lists', controller.readingLists);
 memberRouter.put('/reading-lists/:listId', validate(controller.schemas.list), controller.updateReadingList);
 memberRouter.delete('/reading-lists/:listId', controller.deleteReadingList);
 memberRouter.post('/reading-lists/:listId/items', validate(controller.schemas.listItem), controller.addReadingListItem);
+memberRouter.get('/reading-lists/:listId/items', controller.readingListItems);
+memberRouter.delete('/reading-lists/:listId/items/:itemId', controller.removeReadingListItem);
+

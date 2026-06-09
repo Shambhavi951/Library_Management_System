@@ -17,15 +17,28 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
     async function loadPublications() {
       if (form && form.some(f => f.name === 'publication_id')) {
         try {
-          const pubs = await api('/catalog/publications');
-          setPublicationOptions(pubs.map(p => ({ value: p.publication_id, label: p.title })));
+          if (endpoint === '/member/reviews') {
+            const history = await api('/member/history');
+            const uniquePubs = [];
+            const seen = new Set();
+            for (const item of history) {
+              if (item.publication_id && !seen.has(item.publication_id)) {
+                seen.add(item.publication_id);
+                uniquePubs.push({ value: item.publication_id, label: item.title });
+              }
+            }
+            setPublicationOptions(uniquePubs);
+          } else {
+            const pubs = await api('/catalog/publications');
+            setPublicationOptions(pubs.map(p => ({ value: p.publication_id, label: p.title })));
+          }
         } catch (err) {
           console.error('Failed to load publications', err);
         }
       }
     }
     loadPublications();
-  }, [form]);
+  }, [form, endpoint]);
 
   useEffect(() => {
     async function loadBranches() {

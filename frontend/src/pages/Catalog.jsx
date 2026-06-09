@@ -47,6 +47,7 @@ export default function Catalog({ publicMode = false }) {
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState(user?.branch_id || '');
   const [message, setMessage] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
 
   useEffect(() => {
     if (user?.branch_id) {
@@ -55,6 +56,7 @@ export default function Catalog({ publicMode = false }) {
   }, [user?.branch_id]);
 
   useEffect(() => { api('/catalog/branches').then(setBranches).catch(() => {}); }, []);
+  useEffect(() => { api('/catalog/publications').then(setSuggestions).catch(() => {}); }, []);
   useEffect(() => { load(); }, [branchId]);
 
   async function load() {
@@ -76,7 +78,13 @@ export default function Catalog({ publicMode = false }) {
       {message && <div className={`toast-inline toast-${message.type || 'info'}`}>{message.text || message}</div>}
       <div className="card">
         <div className="mini-form">
-          <div className="form-field"><label>Search</label><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title, author, or ISBN" /></div>
+          <div className="form-field">
+            <label>Search</label>
+            <input list="book-suggestions" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Title, author, or ISBN" />
+            <datalist id="book-suggestions">
+              {suggestions.map((p) => <option key={p.publication_id} value={p.title} />)}
+            </datalist>
+          </div>
           <div className="form-field"><label>Branch</label><select value={branchId} onChange={(e) => setBranchId(e.target.value)}><option value="">All branches</option>{branches.map((b) => <option key={b.branch_id} value={b.branch_id}>{displayBranch(b.branch_name)}</option>)}</select></div>
           <button className="btn btn-primary" onClick={load}>Search</button>
         </div>

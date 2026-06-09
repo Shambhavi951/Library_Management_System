@@ -21,7 +21,7 @@ export async function searchCatalog({ q = '', branchId = null, availableOnly = f
      LEFT JOIN inventory_copies ic ON ic.publication_id = p.publication_id
        AND (@branchId IS NULL OR ic.branch_id = @branchId)
      LEFT JOIN publication_reviews r ON r.publication_id = p.publication_id
-     WHERE (@q = '' OR p.title LIKE '%' + @q + '%' OR bk.isbn LIKE '%' + @q + '%' OR a.last_name LIKE '%' + @q + '%')
+     WHERE (@q = '' OR p.title LIKE CONCAT('%', @q, '%') OR bk.isbn LIKE CONCAT('%', @q, '%') OR a.last_name LIKE CONCAT('%', @q, '%'))
      GROUP BY p.publication_id, p.title, p.publication_year, p.publisher_name, p.language_name,
               p.publication_type, p.popularity_score, p.publication_status, bk.isbn, bk.edition_name
      HAVING (@availableOnly = 0 OR SUM(CASE WHEN ic.copy_status = 'AVAILABLE' THEN 1 ELSE 0 END) > 0)

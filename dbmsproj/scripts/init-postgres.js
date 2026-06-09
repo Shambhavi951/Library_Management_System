@@ -3,11 +3,13 @@ import path from 'path';
 import pg from 'pg';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Using your Neon connection string directly
-const connectionString = 'postgresql://neondb_owner:npg_Weo6v1uPaLyK@ep-cold-wind-ap3kkg8c.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const connectionString = process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING;
 
 async function init() {
   console.log('Connecting to Neon PostgreSQL...');

@@ -3,10 +3,18 @@ import path from 'path';
 import pg from 'pg';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const connectionString = 'postgresql://neondb_owner:npg_Weo6v1uPaLyK@ep-cold-wind-ap3kkg8c.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require';
+const connectionString = process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING;
+
+if (!connectionString) {
+  console.error('DATABASE_URL or DB_CONNECTION_STRING is not defined in environment variables');
+  process.exit(1);
+}
 
 async function init() {
   console.log('Connecting to Neon PostgreSQL...');

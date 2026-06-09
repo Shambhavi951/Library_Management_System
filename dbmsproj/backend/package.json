@@ -20,10 +20,10 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "mssql": "^11.0.1",
-    "nanoid": "^5.0.9"
+    "nanoid": "^5.0.9",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
   }
 }
-

@@ -167,7 +167,37 @@ async function clearDatabase() {
     try {
       await query(`DBCC CHECKIDENT ('${table}', RESEED, 0)`);
     } catch (e) {
-      console.warn(`Could not reseed table ${table}: ${e.message}`);
+      try {
+        // Fallback for PostgreSQL sequence reset
+        const seqName = `${table}_${table.slice(0, -1)}_id_seq`;
+        // Handle irregular plural sequence naming conventions
+        let actualSeq = seqName;
+        if (table === 'reading_lists') actualSeq = 'reading_lists_reading_list_id_seq';
+        if (table === 'reading_list_items') actualSeq = 'reading_list_items_item_id_seq';
+        if (table === 'publications') actualSeq = 'publications_publication_id_seq';
+        if (table === 'subjects') actualSeq = 'subjects_subject_id_seq';
+        if (table === 'authors') actualSeq = 'authors_author_id_seq';
+        if (table === 'owner_settings') actualSeq = 'owner_settings_setting_id_seq';
+        if (table === 'admin_profiles') actualSeq = 'admin_profiles_admin_profile_id_seq';
+        if (table === 'user_accounts') actualSeq = 'user_accounts_account_id_seq';
+        if (table === 'members') actualSeq = 'members_member_id_seq';
+        if (table === 'membership_plans') actualSeq = 'membership_plans_membership_plan_id_seq';
+        if (table === 'branches') actualSeq = 'branches_branch_id_seq';
+        if (table === 'borrowing_history') actualSeq = 'borrowing_history_history_id_seq';
+        if (table === 'borrowing_records') actualSeq = 'borrowing_records_borrow_id_seq';
+        if (table === 'inventory_copies') actualSeq = 'inventory_copies_copy_id_seq';
+        if (table === 'book_holds') actualSeq = 'book_holds_hold_id_seq';
+        if (table === 'reservation_queue') actualSeq = 'reservation_queue_reservation_id_seq';
+        if (table === 'quality_checks') actualSeq = 'quality_checks_quality_check_id_seq';
+        if (table === 'branch_transfers') actualSeq = 'branch_transfers_transfer_id_seq';
+        if (table === 'acquisition_requests') actualSeq = 'acquisition_requests_acquisition_request_id_seq';
+        if (table === 'notifications') actualSeq = 'notifications_notification_id_seq';
+        if (table === 'publication_reviews') actualSeq = 'publication_reviews_review_id_seq';
+
+        await query(`ALTER SEQUENCE ${actualSeq} RESTART WITH 1`);
+      } catch (err) {
+        console.warn(`Could not reseed table sequence for ${table}: ${err.message}`);
+      }
     }
   }
 }
@@ -332,10 +362,8 @@ async function seed() {
   async function createAdmin(email, username, password, branchId, salary) {
     await createAccount(username, email, password, 'ADMIN', null, branchId);
     await query(
-      `DECLARE @accountId INT;
-       SELECT @accountId = account_id FROM user_accounts WHERE email = @email;
-       INSERT INTO admin_profiles(account_id,branch_id,salary_amount,hire_date) 
-       VALUES(@accountId,@branchId,@salary,GETDATE())`,
+      `INSERT INTO admin_profiles(account_id, branch_id, salary_amount, hire_date) 
+       VALUES((SELECT account_id FROM user_accounts WHERE email = @email), @branchId, @salary, GETDATE())`,
       { email, branchId, salary }
     );
   }

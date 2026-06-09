@@ -6,6 +6,7 @@ export const env = {
   port: Number(process.env.PORT || 4000),
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   db: {
+    connectionString: process.env.DATABASE_URL || process.env.DB_CONNECTION_STRING,
     server: process.env.DB_SERVER || 'localhost',
     port: Number(process.env.DB_PORT || 1433),
     database: process.env.DB_NAME || 'LibraryDB',

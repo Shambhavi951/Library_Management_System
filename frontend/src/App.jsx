@@ -37,6 +37,14 @@ const MembersRoute = () => {
   return <DataPage title="Manage Members" endpoint={endpoint} columns={['member_id', 'first_name', 'last_name', 'email', 'phone_number', 'plan_name', 'home_branch_name', 'password_hash']} form={memberForm} actionLabel="Create Member" />;
 };
 
+const TransfersRoute = () => {
+  const { user } = useAuth();
+  return <DataPage title="Transfers" endpoint="/member/transfers"
+    columns={transferCols}
+    form={user?.plan_name === 'PREMIUM' ? transferForm : null}
+    actionLabel="Request Transfer" />;
+};
+
 export default function App() {
   return (
     <Routes>
@@ -49,7 +57,7 @@ export default function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/borrow-center" element={<DataPage title="Borrow Center" endpoint="/member/history" columns={['borrow_id', 'title', 'branch_name', 'borrow_status', 'due_date', 'fine_amount']} />} />
         <Route path="/reservations" element={<DataPage title="Reservation Center" endpoint="/member/reservations" columns={memberCols} />} />
-        <Route path="/transfers" element={<DataPage title="Transfers" endpoint="/member/transfers" columns={transferCols} form={transferForm} actionLabel="Request Transfer" />} />
+        <Route path="/transfers" element={<TransfersRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
         <Route path="/reading-lists" element={<DataPage title="Reading Lists" endpoint="/member/reading-lists" columns={['reading_list_id', 'list_name', 'visibility_status', 'item_count']} form={readingListForm} actionLabel="Create List" />} />
         <Route path="/reviews" element={<DataPage title="Reviews" endpoint="/member/reviews" columns={['review_id', 'publication_id', 'rating_value', 'review_text']} form={reviewForm} actionLabel="Submit Review" />} />
@@ -81,7 +89,7 @@ const reviewForm = [{ name: 'publication_id', label: 'Publication Id', type: 'nu
 const upgradeForm = [{ name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }];
 const copyForm = [{ name: 'publication_id', label: 'Publication Id', type: 'number' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'copy_number', label: 'Copy Number', type: 'number', default: 1 }, { name: 'floor_number', label: 'Floor', type: 'number', default: 1 }, { name: 'section_code', label: 'Section', default: 'AI' }, { name: 'shelf_number', label: 'Shelf', default: 'B12' }, { name: 'rack_number', label: 'Rack', default: 'C' }, { name: 'position_number', label: 'Position', default: '4' }];
 const qualityForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'condition', label: 'Condition', options: [{ value: 'GOOD', label: 'Good' }, { value: 'FAIR', label: 'Fair' }, { value: 'DAMAGED', label: 'Damaged' }, { value: 'LOST', label: 'Lost' }] }, { name: 'remarks', label: 'Remarks' }];
-const transferForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'destination_branch_id', label: 'Destination Branch Id', type: 'number' }];
+const transferForm = [{ name: 'publication_id', label: 'Book Title' }, { name: 'source_branch_id', label: 'Transfer From Branch' }];
 const adminForm = [{ name: 'username', label: 'Username' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'password', label: 'Password', type: 'password' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'salary_amount', label: 'Salary', type: 'number' }, { name: 'hire_date', label: 'Hire Date', type: 'date' }];
 const memberForm = [{ name: 'first_name', label: 'First Name' }, { name: 'last_name', label: 'Last Name' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'phone_number', label: 'Phone' }, { name: 'home_branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }, { name: 'password', label: 'Password', type: 'password' }];
 const settingsForm = [{ name: 'fine_per_day', label: 'Fine Per Day', type: 'number' }, { name: 'premium_membership_cost', label: 'Premium Cost', type: 'number' }, { name: 'standard_membership_cost', label: 'Standard Cost', type: 'number' }, { name: 'standard_hold_hours', label: 'Standard Hold Hours', type: 'number' }, { name: 'premium_hold_hours', label: 'Premium Hold Hours', type: 'number' }];

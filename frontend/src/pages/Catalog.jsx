@@ -3,6 +3,7 @@ import Topbar from '../components/Topbar.jsx';
 import BookCover from '../components/BookCover.jsx';
 import { api } from '../api/client.js';
 import { displayBranch } from '../utils/branches.js';
+import { useAuth } from '../context/authStore.js';
 
 function StarRating({ avg, count }) {
   if (!count || count === 0) {
@@ -40,13 +41,22 @@ function StarRating({ avg, count }) {
 }
 
 export default function Catalog({ publicMode = false }) {
+  const { user } = useAuth();
   const [q, setQ] = useState('');
   const [books, setBooks] = useState([]);
   const [branches, setBranches] = useState([]);
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState(user?.branch_id || '');
   const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (user?.branch_id) {
+      setBranchId(user.branch_id);
+    }
+  }, [user?.branch_id]);
+
   useEffect(() => { api('/catalog/branches').then(setBranches).catch(() => {}); }, []);
   useEffect(() => { load(); }, [branchId]);
+
   async function load() {
     const params = new URLSearchParams({ q, ...(branchId ? { branchId } : {}) });
     setBooks(await api(`/catalog/books?${params}`));

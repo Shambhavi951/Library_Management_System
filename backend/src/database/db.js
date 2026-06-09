@@ -49,7 +49,7 @@ export async function query(text, inputs = {}) {
     pgText = pgText
       .replace(/ISNULL\(/gi, 'COALESCE(')
       .replace(/GETDATE\(\)/gi, 'NOW()')
-      .replace(/TOP 1\s+([a-zA-Z0-9_*,\s]+)\s+FROM/gi, '$1 FROM') // Simplified TOP 1 conversion helper
+      .replace(/TOP 1\s+([a-zA-Z0-9_*,\s.]+)\s+FROM/gi, '$1 FROM') // Simplified TOP 1 conversion helper
       .replace(/SELECT TOP\s+(\d+)/gi, 'SELECT'); // Handled by LIMIT below
 
     // Convert DATEADD(day, -2, date) to date + INTERVAL '-2 days'

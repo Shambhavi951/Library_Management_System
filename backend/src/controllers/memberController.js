@@ -16,7 +16,7 @@ export const schemas = {
   borrowHold: Joi.object({ hold_id: Joi.number().required() }),
   switchBranch: Joi.object({ branch_id: Joi.number().required() }),
   upgrade: Joi.object({ plan_name: Joi.string().valid('STANDARD', 'PREMIUM').required() }),
-  transfer: Joi.object({ copy_id: Joi.number().required(), destination_branch_id: Joi.number().required() }),
+  transfer: Joi.object({ publication_id: Joi.number().required(), source_branch_id: Joi.number().required() }),
   acquisition: Joi.object({
     title: Joi.string().required(),
     author: Joi.string().required(),
@@ -38,7 +38,7 @@ export const history = asyncHandler(async (req, res) => ok(res, await borrow.mem
 export const switchBranch = asyncHandler(async (req, res) => ok(res, await member.switchBranch(req.user.member_id, req.body.branch_id)));
 export const upgrade = asyncHandler(async (req, res) => ok(res, await member.upgradeMembership(req.user.member_id, req.body.plan_name)));
 export const fines = asyncHandler(async (req, res) => ok(res, await member.fines(req.user.member_id)));
-export const requestTransfer = asyncHandler(async (req, res) => created(res, await transfer.requestTransfer(req.user.member_id, req.body.copy_id, req.body.destination_branch_id)));
+export const requestTransfer = asyncHandler(async (req, res) => created(res, await transfer.requestTransfer(req.user.member_id, Number(req.body.publication_id), Number(req.body.source_branch_id))));
 export const transfers = asyncHandler(async (req, res) => ok(res, await transfer.listTransfers(null, req.user.member_id)));
 export const cancelTransfer = asyncHandler(async (req, res) => ok(res, await transfer.cancelTransfer(req.user.member_id, Number(req.params.transferId))));
 export const requestAcquisition = asyncHandler(async (req, res) => created(res, await acquisition.createRequest(req.user.member_id, req.body)));

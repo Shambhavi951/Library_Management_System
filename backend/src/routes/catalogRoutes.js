@@ -7,4 +7,5 @@ catalogRouter.get('/branches', controller.branches);
 catalogRouter.get('/books', validate(controller.schemas.search, 'query'), controller.search);
 catalogRouter.get('/books/:publicationId', controller.details);
 catalogRouter.get('/books/:publicationId/intelligence', controller.intelligence);
+catalogRouter.get('/publications', controller.publicationsList);
 

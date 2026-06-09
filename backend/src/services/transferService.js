@@ -2,31 +2,59 @@ import { query } from '../database/db.js';
 import { badRequest, notFound } from '../utils/errors.js';
 import { notify } from './notificationService.js';
 
-export async function requestTransfer(memberId, copyId, destinationBranchId) {
+export async function requestTransfer(memberId, publicationId, sourceBranchId) {
+  // 1. Check member plan and active branch
+  const [member] = await query(
+    `SELECT mp.plan_name, ua.branch_id AS active_branch_id
+     FROM members m 
+     JOIN membership_plans mp ON mp.membership_plan_id = m.membership_plan_id
+     JOIN user_accounts ua ON ua.member_id = m.member_id
+     WHERE m.member_id = @memberId`,
+    { memberId }
+  );
+  if (!member) throw notFound('Member not found');
+  if (member.plan_name === 'STANDARD') {
+    throw badRequest('Only Premium members are allowed to request cross-branch transfers');
+  }
+
+  const destinationBranchId = member.active_branch_id;
+  if (!destinationBranchId) throw badRequest('No active branch set for your account');
+  if (Number(sourceBranchId) === Number(destinationBranchId)) {
+    throw badRequest('Cannot transfer within the same branch. Source and destination branches are the same.');
+  }
+
+  // 2. Find first available copy at source branch
   const [copy] = await query(
-    `SELECT ic.*, p.title FROM inventory_copies ic 
+    `SELECT ic.copy_id, p.title 
+     FROM inventory_copies ic
      JOIN publications p ON p.publication_id = ic.publication_id
-     WHERE ic.copy_id = @copyId`, 
-    { copyId }
+     WHERE ic.publication_id = @publicationId 
+       AND ic.branch_id = @sourceBranchId 
+       AND ic.copy_status = 'AVAILABLE'
+       AND NOT EXISTS (
+         SELECT 1 FROM branch_transfers bt 
+         WHERE bt.copy_id = ic.copy_id 
+           AND bt.transfer_status IN ('REQUESTED','APPROVED','IN_TRANSIT','ARRIVED','READY_FOR_PICKUP')
+       )
+     LIMIT 1`,
+    { publicationId, sourceBranchId }
   );
-  if (!copy) throw notFound('Copy not found');
-  if (Number(copy.branch_id) === Number(destinationBranchId)) throw badRequest('Copy is already at that branch');
-  if (!['AVAILABLE'].includes(copy.copy_status)) throw badRequest('Only available copies can be transferred');
-  const [active] = await query(
-    `SELECT TOP 1 transfer_id FROM branch_transfers
-     WHERE copy_id = @copyId AND transfer_status IN ('REQUESTED','APPROVED','IN_TRANSIT','ARRIVED','READY_FOR_PICKUP')`,
-    { copyId }
-  );
-  if (active) throw badRequest('This copy already has an active transfer');
+  if (!copy) {
+    throw badRequest('No available copies of this book are currently available at the selected source branch.');
+  }
+
+  const copyId = copy.copy_id;
+
+  // 3. Insert transfer record
   const [transfer] = await query(
     `INSERT INTO branch_transfers(copy_id, source_branch_id, destination_branch_id, transfer_status, requested_date, requested_by_member_id)
      OUTPUT INSERTED.*
-     VALUES(@copyId,@source,@destination,'REQUESTED',GETDATE(),@memberId)`,
-    { copyId, source: copy.branch_id, destination: destinationBranchId, memberId }
+     VALUES(@copyId,@sourceBranchId,@destinationBranchId,'REQUESTED',NOW(),@memberId)`,
+    { copyId, sourceBranchId, destinationBranchId, memberId }
   );
-  await notify(memberId, 'TRANSFER_REQUESTED', 'Transfer requested', 'Your cross-branch transfer request was recorded.');
-  
-  await notify(null, 'TRANSFER_OUT_REQUESTED', 'Transfer Request Out', `Copy of "${copy.title}" has been requested for transfer to another branch.`, copy.branch_id);
+
+  await notify(memberId, 'TRANSFER_REQUESTED', 'Transfer requested', `Transfer request for "${copy.title}" was recorded.`);
+  await notify(null, 'TRANSFER_OUT_REQUESTED', 'Transfer Request Out', `Copy of "${copy.title}" has been requested for transfer to another branch.`, sourceBranchId);
   await notify(null, 'TRANSFER_IN_REQUESTED', 'Incoming Transfer Request', `Copy of "${copy.title}" is requested to be transferred to your branch.`, destinationBranchId);
 
   return transfer;

@@ -10,6 +10,37 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
   const [editingId, setEditingId] = useState(null);
   const [expandedListId, setExpandedListId] = useState(null);
   const [listItems, setListItems] = useState([]);
+  const [publicationOptions, setPublicationOptions] = useState([]);
+  const [branchOptions, setBranchOptions] = useState([]);
+
+  useEffect(() => {
+    async function loadPublications() {
+      if (form && form.some(f => f.name === 'publication_id')) {
+        try {
+          const pubs = await api('/catalog/publications');
+          setPublicationOptions(pubs.map(p => ({ value: p.publication_id, label: p.title })));
+        } catch (err) {
+          console.error('Failed to load publications', err);
+        }
+      }
+    }
+    loadPublications();
+  }, [form]);
+
+  useEffect(() => {
+    async function loadBranches() {
+      if (form && form.some(f => f.name.endsWith('branch_id'))) {
+        try {
+          const branches = await api('/catalog/branches');
+          setBranchOptions(branches.map(b => ({ value: b.branch_id, label: b.branch_name })));
+        } catch (err) {
+          console.error('Failed to load branches', err);
+        }
+      }
+    }
+    loadBranches();
+  }, [form]);
+
 
   async function toggleExpandList(row) {
     const listId = row.reading_list_id;
@@ -40,6 +71,25 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
     }
   }
 
+  function handleFieldChange(fieldName, val) {
+    const newValues = { ...values, [fieldName]: val };
+    if (endpoint === '/member/reviews' && fieldName === 'publication_id') {
+      const existingReview = rows.find(r => Number(r.publication_id) === Number(val));
+      if (existingReview) {
+        setEditingId(existingReview.review_id);
+        newValues.rating_value = existingReview.rating_value;
+        newValues.review_text = existingReview.review_text;
+        setMessage({ text: 'You already reviewed this book. Submitting will update your existing review.', type: 'info' });
+      } else {
+        setEditingId(null);
+        newValues.rating_value = '';
+        newValues.review_text = '';
+        setMessage(null);
+      }
+    }
+    setValues(newValues);
+  }
+
   async function load() {
     if (!endpoint) return;
     try {
@@ -63,6 +113,13 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
 
   async function submit(event) {
     event.preventDefault();
+    if (endpoint === '/member/reading-lists' && !editingId) {
+      const isDuplicate = rows.some(r => r.list_name.trim().toLowerCase() === values.list_name.trim().toLowerCase());
+      if (isDuplicate) {
+        const confirmCreate = confirm(`A reading list named "${values.list_name}" already exists. Do you still want to create another one with the same name?`);
+        if (!confirmCreate) return;
+      }
+    }
     try {
       const editConfig = getEditConfig(endpoint, editingId);
       const createConfig = getCreateConfig(endpoint, method);
@@ -147,8 +204,21 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
           {form.map((field) => (
             <div className="form-field" key={field.name}>
               <label>{field.label}</label>
-              {field.options ? <select disabled={readOnly} value={values[field.name]} onChange={(e) => setValues({ ...values, [field.name]: e.target.value })}>{field.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
-                : <input disabled={readOnly} type={field.type || 'text'} value={values[field.name]} onChange={(e) => setValues({ ...values, [field.name]: e.target.value })} required={field.name !== 'password' && field.name !== 'phone_number'} />}
+              {field.name === 'publication_id' ? (
+                <select disabled={readOnly} value={values[field.name]} onChange={(e) => handleFieldChange(field.name, e.target.value)} required>
+                  <option value="">-- Select Book Title --</option>
+                  {publicationOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : field.name.endsWith('branch_id') ? (
+                <select disabled={readOnly} value={values[field.name]} onChange={(e) => handleFieldChange(field.name, e.target.value)} required>
+                  <option value="">-- Select Branch --</option>
+                  {branchOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : field.options ? (
+                <select disabled={readOnly} value={values[field.name]} onChange={(e) => handleFieldChange(field.name, e.target.value)}>{field.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
+              ) : (
+                <input disabled={readOnly} type={field.type || 'text'} value={values[field.name]} onChange={(e) => handleFieldChange(field.name, e.target.value)} required={field.name !== 'password' && field.name !== 'phone_number'} />
+              )}
             </div>
           ))}
         </div>

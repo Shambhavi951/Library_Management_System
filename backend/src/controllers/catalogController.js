@@ -15,4 +15,6 @@ export const branches = asyncHandler(async (req, res) => ok(res, await catalog.l
 export const search = asyncHandler(async (req, res) => ok(res, await catalog.searchCatalog(req.query)));
 export const details = asyncHandler(async (req, res) => ok(res, await catalog.getBookDetails(Number(req.params.publicationId))));
 export const intelligence = asyncHandler(async (req, res) => ok(res, await catalog.branchIntelligence(Number(req.params.publicationId))));
+export const publicationsList = asyncHandler(async (req, res) => ok(res, await catalog.listPublications()));
+
 

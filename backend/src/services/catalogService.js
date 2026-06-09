@@ -78,3 +78,11 @@ export async function branchIntelligence(publicationId) {
   );
 }
 
+export async function listPublications() {
+  return query(
+    `SELECT publication_id, title 
+     FROM publications 
+     WHERE publication_status <> 'REMOVED' 
+     ORDER BY title`
+  );
+}

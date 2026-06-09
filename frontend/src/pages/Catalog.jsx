@@ -48,6 +48,8 @@ export default function Catalog({ publicMode = false }) {
   const [branchId, setBranchId] = useState(user?.branch_id || '');
   const [message, setMessage] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [availableOnly, setAvailableOnly] = useState(false);
+  const [readingLists, setReadingLists] = useState([]);
 
   useEffect(() => {
     if (user?.branch_id) {
@@ -57,12 +59,23 @@ export default function Catalog({ publicMode = false }) {
 
   useEffect(() => { api('/catalog/branches').then(setBranches).catch(() => {}); }, []);
   useEffect(() => { api('/catalog/publications').then(setSuggestions).catch(() => {}); }, []);
-  useEffect(() => { load(); }, [branchId]);
+  useEffect(() => {
+    if (!publicMode) {
+      api('/member/reading-lists').then(setReadingLists).catch(() => {});
+    }
+  }, [publicMode]);
+
+  useEffect(() => { load(); }, [branchId, availableOnly]);
 
   async function load() {
-    const params = new URLSearchParams({ q, ...(branchId ? { branchId } : {}) });
+    const params = new URLSearchParams({ 
+      q, 
+      ...(branchId ? { branchId } : {}),
+      availableOnly: availableOnly ? 'true' : 'false'
+    });
     setBooks(await api(`/catalog/books?${params}`));
   }
+
   async function action(path, body, label) {
     try {
       await api(path, { method: 'POST', body });
@@ -72,11 +85,45 @@ export default function Catalog({ publicMode = false }) {
       setMessage({ text: err.message, type: 'error' });
     }
   }
+
+  async function handleAddToList(publicationId, listId) {
+    if (!listId) return;
+    try {
+      await api(`/member/reading-lists/${listId}/items`, {
+        method: 'POST',
+        body: { publication_id: publicationId }
+      });
+      setMessage({ text: 'Added to reading list successfully!', type: 'success' });
+    } catch (err) {
+      setMessage({ text: err.message, type: 'error' });
+    }
+  }
+
   return (
     <div className={publicMode ? 'main-content' : ''}>
       <Topbar title={publicMode ? 'Public Catalog' : 'Catalog'} crumb="Available books and branch intelligence" />
       {message && <div className={`toast-inline toast-${message.type || 'info'}`}>{message.text || message}</div>}
-      <div className="card">
+      
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--brown-warm)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+          <button 
+            className={`btn btn-sm ${!availableOnly ? 'btn-primary' : ''}`} 
+            style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}
+            type="button" 
+            onClick={() => setAvailableOnly(false)}
+          >
+            All Books
+          </button>
+          <button 
+            className={`btn btn-sm ${availableOnly ? 'btn-primary' : ''}`} 
+            style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}
+            type="button" 
+            onClick={() => setAvailableOnly(true)}
+          >
+            Available Only
+          </button>
+        </div>
+        
         <div className="mini-form">
           <div className="form-field">
             <label>Search</label>
@@ -89,6 +136,7 @@ export default function Catalog({ publicMode = false }) {
           <button className="btn btn-primary" onClick={load}>Search</button>
         </div>
       </div>
+
       <div className="book-grid">
         {books.map((book) => (
           <article className="book-card-visual" key={book.publication_id}>
@@ -98,10 +146,37 @@ export default function Catalog({ publicMode = false }) {
               <div className="book-info-author">{book.authors || 'Unknown author'}</div>
               <StarRating avg={book.avg_rating} count={book.review_count} />
               <span className={`status-pill ${book.available_copies > 0 ? 'ok' : 'n'}`}>{book.available_copies || 0} available</span>
-              {!publicMode && <div className="btn-row">
-                <button className="btn btn-sm btn-primary" onClick={() => action('/member/borrow', { publication_id: book.publication_id, branch_id: Number(branchId || book.first_available_branch_id || 1) }, 'Borrowed successfully')}>Borrow</button>
-                <button className="btn btn-sm" onClick={() => action('/member/reservations', { publication_id: book.publication_id, branch_id: Number(branchId || 1) }, 'Reservation joined')}>Reserve</button>
-              </div>}
+              {!publicMode && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
+                  <div className="btn-row">
+                    <button className="btn btn-sm btn-primary" onClick={() => action('/member/borrow', { publication_id: book.publication_id, branch_id: Number(branchId || book.first_available_branch_id || 1) }, 'Borrowed successfully')}>Borrow</button>
+                    <button className="btn btn-sm" onClick={() => action('/member/reservations', { publication_id: book.publication_id, branch_id: Number(branchId || 1) }, 'Reservation joined')}>Reserve</button>
+                  </div>
+                  {readingLists.length > 0 && (
+                    <select 
+                      style={{ 
+                        padding: '4px 6px', 
+                        fontSize: '11px', 
+                        border: '1px solid var(--brown-warm)', 
+                        background: 'var(--parchment)', 
+                        color: 'var(--ink-subtle)',
+                        borderRadius: '2px',
+                        cursor: 'pointer'
+                      }}
+                      defaultValue=""
+                      onChange={(e) => {
+                        handleAddToList(book.publication_id, e.target.value);
+                        e.target.value = ""; // Reset dropdown
+                      }}
+                    >
+                      <option value="" disabled>Add to list...</option>
+                      {readingLists.map(l => (
+                        <option key={l.reading_list_id} value={l.reading_list_id}>{l.list_name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              )}
             </div>
           </article>
         ))}

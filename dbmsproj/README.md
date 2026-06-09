@@ -140,6 +140,39 @@ npm run dev
 
 ---
 
+## 🌐 Production Cloud Hosting Setup
+
+To deploy the application live on the web, follow these steps:
+
+### 1. Database Setup (Neon PostgreSQL)
+1. Sign up for a free PostgreSQL database at [Neon.tech](https://neon.tech/).
+2. Create a new project named `LibraryDB`.
+3. Locate your **Connection String** (which looks like `postgresql://neondb_owner:password@ep-host.us-east-1.aws.neon.tech/neondb?sslmode=require`).
+4. Go to **SQL Editor** in the Neon console, copy the contents of `postgres_schema.sql` (found in the repository root), paste them into the editor, and click **Run** to build the tables.
+5. In your local backend `.env` file, temporarily set `DATABASE_URL` to your Neon Connection String and run the seeding script to populate the cloud DB:
+   ```bash
+   npm run seed
+   ```
+
+### 2. Web Application Setup (Render Web Service)
+1. Sign up for a free account at [Render.com](https://render.com/).
+2. Create a **New Web Service** and connect your GitHub repository.
+3. Configure the service with the following settings:
+   - **Name**: `library-management-system`
+   - **Runtime**: `Node`
+   - **Root Directory**: `dbmsproj`
+   - **Build Command**: `cd frontend && npm install && npm run build && cd ../backend && npm install`
+   - **Start Command**: `cd backend && npm start`
+   - **Instance Type**: `Free` ($0/month)
+4. Add the following **Environment Variables**:
+   - `DATABASE_URL` = *(Your Neon PostgreSQL connection string)*
+   - `JWT_ACCESS_SECRET` = `supersecretaccesskey12345`
+   - `JWT_REFRESH_SECRET` = `supersecretrefreshkey12345`
+   - `CLIENT_ORIGIN` = `https://your-render-app-name.onrender.com`
+5. Click **Deploy Web Service** and your library management system will be live!
+
+---
+
 ## Running URLs
 
 | Service | URL |

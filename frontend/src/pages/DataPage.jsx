@@ -91,7 +91,7 @@ export default function DataPage({ title, crumb, endpoint, columns = [], form, m
   }
 
   async function load() {
-    if (!endpoint) return;
+    if (!endpoint || endpoint === '/member/upgrade') return;
     try {
       const data = await api(endpoint);
       setRows(Array.isArray(data) ? data : data?.mostBorrowed || data?.demand || (data ? [data] : []));

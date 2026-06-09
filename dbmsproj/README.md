@@ -1,5 +1,7 @@
 # 📚 The Reading Nook
 
+🚀 **Live Deployed App**: [https://library-management-system-qyp2.onrender.com](https://library-management-system-qyp2.onrender.com)
+
 A complete full-stack **multi-branch intelligent library management platform** built with React, Express, and Microsoft SQL Server.
 
 ---

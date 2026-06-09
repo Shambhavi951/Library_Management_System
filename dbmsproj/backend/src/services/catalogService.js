@@ -12,7 +12,7 @@ export async function searchCatalog({ q = '', branchId = null, availableOnly = f
             COUNT(DISTINCT ic.copy_id) AS total_copies,
             SUM(DISTINCT CASE WHEN ic.copy_status = 'AVAILABLE' THEN 1 ELSE 0 END) AS available_copies,
             MIN(CASE WHEN ic.copy_status = 'AVAILABLE' THEN ic.branch_id END) AS first_available_branch_id,
-            ROUND(AVG(CAST(r.rating_value AS FLOAT)), 1) AS avg_rating,
+            ROUND(CAST(AVG(r.rating_value) AS numeric), 1) AS avg_rating,
             COUNT(DISTINCT r.review_id) AS review_count
      FROM publications p
      LEFT JOIN books bk ON bk.publication_id = p.publication_id

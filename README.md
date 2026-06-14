@@ -273,7 +273,7 @@ npm run seed
 ### Default Test Members
 
 | Name | Email | Plan | Home Branch | Password |
-|---|---|---|---|
+|------|-------|------|-------------|----------|
 | Aarav Sharma | `member@readingnook.local` | STANDARD | Fernhollow | `PremiumPass!2026` |
 | Ananya Patel | `premium@readingnook.local` | PREMIUM | Mistgrove | `MemberPass!2026` |
 

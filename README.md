@@ -272,38 +272,63 @@ npm run seed
 
 ### Default Test Members
 
-| Name | Email | Plan | Home Branch |
+| Name | Email | Plan | Home Branch | Password |
 |---|---|---|---|
-| Mira Pages | `member@readingnook.local` | STANDARD | Fernhollow |
-| Theo Quill | `premium@readingnook.local` | PREMIUM | Mistgrove |
-
-> Password for both: see above table
+| Aarav Sharma | `member@readingnook.local` | STANDARD | Fernhollow | `PremiumPass!2026` |
+| Ananya Patel | `premium@readingnook.local` | PREMIUM | Mistgrove | `MemberPass!2026` |
 
 ### Extended Member List (all use password `MemberPass!2026`)
 
 | Email | Name | Plan | Branch |
 |---|---|---|---|
-| `alice.reading@readingnook.local` | Alice Smith | STANDARD | Fernhollow |
-| `bob.reads@readingnook.local` | Bob Johnson | PREMIUM | Mistgrove |
-| `charlie.bookworm@readingnook.local` | Charlie Brown | STANDARD | Bramblewick |
-| `diana.prince@readingnook.local` | Diana Prince | PREMIUM | Fernhollow |
-| `ethan.hunt@readingnook.local` | Ethan Hunt | STANDARD | Mistgrove |
-| `fiona.gallagher@readingnook.local` | Fiona Gallagher | STANDARD | Bramblewick |
-| `george.rr@readingnook.local` | George Martin | PREMIUM | Fernhollow |
-| `hannah.baker@readingnook.local` | Hannah Baker | STANDARD | Mistgrove |
-| `ian.malcolm@readingnook.local` | Ian Malcolm | PREMIUM | Bramblewick |
-| `julia.roberts@readingnook.local` | Julia Roberts | STANDARD | Fernhollow |
-| `karen.smith@readingnook.local` | Karen Smith | STANDARD | Fernhollow |
-| `leo.dicaprio@readingnook.local` | Leo DiCaprio | PREMIUM | Mistgrove |
-| `monica.geller@readingnook.local` | Monica Geller | STANDARD | Bramblewick |
-| `neil.armstrong@readingnook.local` | Neil Armstrong | PREMIUM | Fernhollow |
-| `olivia.rodrigo@readingnook.local` | Olivia Rodrigo | STANDARD | Mistgrove |
-| `peter.parker@readingnook.local` | Peter Parker | PREMIUM | Bramblewick |
-| `quentin.tarantino@readingnook.local` | Quentin Tarantino | STANDARD | Fernhollow |
-| `rachel.green@readingnook.local` | Rachel Green | PREMIUM | Mistgrove |
-| `sam.winchester@readingnook.local` | Sam Winchester | STANDARD | Bramblewick |
-| `tony.stark@readingnook.local` | Tony Stark | PREMIUM | Fernhollow |
-
+| arjun.verma@readingnook.local | Arjun Verma | STANDARD | Fernhollow |
+| divya.rao@readingnook.local | Divya Rao | PREMIUM | Mistgrove |
+| rohan.gupta@readingnook.local | Rohan Gupta | STANDARD | Bramblewick |
+| priya.singh@readingnook.local | Priya Singh | PREMIUM | Fernhollow |
+| kabir.malhotra@readingnook.local | Kabir Malhotra | STANDARD | Mistgrove |
+| ishaan.joshi@readingnook.local | Ishaan Joshi | STANDARD | Bramblewick |
+| vikram.reddy@readingnook.local | Vikram Reddy | PREMIUM | Fernhollow |
+| meera.nair@readingnook.local | Meera Nair | STANDARD | Mistgrove |
+| aditya.sen@readingnook.local | Aditya Sen | PREMIUM | Bramblewick |
+| diya.bose@readingnook.local | Diya Bose | STANDARD | Fernhollow |
+| sanjay.kumar@readingnook.local | Sanjay Kumar | STANDARD | Fernhollow |
+| neha.deshmukh@readingnook.local | Neha Deshmukh | PREMIUM | Mistgrove |
+| amit.pandey@readingnook.local | Amit Pandey | STANDARD | Bramblewick |
+| riya.choudhury@readingnook.local | Riya Choudhury | PREMIUM | Fernhollow |
+| dev.kulkarni@readingnook.local | Dev Kulkarni | STANDARD | Mistgrove |
+| pooja.iyer@readingnook.local | Pooja Iyer | PREMIUM | Bramblewick |
+| rahul.deshmukh@readingnook.local | Rahul Deshmukh | STANDARD | Fernhollow |
+| sneha.gowda@readingnook.local | Sneha Gowda | PREMIUM | Mistgrove |
+| vinay.saxena@readingnook.local | Vinay Saxena | STANDARD | Bramblewick |
+| akash.prasad@readingnook.local | Akash Prasad | PREMIUM | Fernhollow |
+| kiran.bhat@readingnook.local | Kiran Bhat | STANDARD | Fernhollow |
+| anil.kulkarni@readingnook.local | Anil Kulkarni | PREMIUM | Mistgrove |
+| sunita.shinde@readingnook.local | Sunita Shinde | STANDARD | Bramblewick |
+| rahul.apte@readingnook.local | Rahul Apte | PREMIUM | Fernhollow |
+| priyanka.bhatia@readingnook.local | Priyanka Bhatia | STANDARD | Mistgrove |
+| sachin.gokhale@readingnook.local | Sachin Gokhale | STANDARD | Bramblewick |
+| manish.gokhale@readingnook.local | Manish Gokhale | PREMIUM | Fernhollow |
+| vijay.mahajan@readingnook.local | Vijay Mahajan | STANDARD | Mistgrove |
+| deepa.mehta@readingnook.local | Deepa Mehta | PREMIUM | Bramblewick |
+| rajesh.dave@readingnook.local | Rajesh Dave | STANDARD | Fernhollow |
+| alisha.trivedi@readingnook.local | Alisha Trivedi | STANDARD | Fernhollow |
+| raman.pandya@readingnook.local | Raman Pandya | PREMIUM | Mistgrove |
+| sharad.vyas@readingnook.local | Sharad Vyas | STANDARD | Bramblewick |
+| alok.shukla@readingnook.local | Alok Shukla | PREMIUM | Fernhollow |
+| sameer.parikh@readingnook.local | Sameer Parikh | STANDARD | Mistgrove |
+| kavita.sanghavi@readingnook.local | Kavita Sanghavi | STANDARD | Bramblewick |
+| abhay.dave@readingnook.local | Abhay Dave | PREMIUM | Fernhollow |
+| harish.bhat@readingnook.local | Harish Bhat | STANDARD | Mistgrove |
+| aarti.chokshi@readingnook.local | Aarti Chokshi | PREMIUM | Bramblewick |
+| abhishek.dave@readingnook.local | Abhishek Dave | STANDARD | Fernhollow |
+| kirti.shinde@readingnook.local | Kirti Shinde | STANDARD | Fernhollow |
+| siddharth.apte@readingnook.local | Siddharth Apte | PREMIUM | Mistgrove |
+| komal.dave@readingnook.local | Komal Dave | STANDARD | Bramblewick |
+| ajay.mahajan@readingnook.local | Ajay Mahajan | PREMIUM | Fernhollow |
+| meenal.sanghavi@readingnook.local | Meenal Sanghavi | STANDARD | Mistgrove |
+| swati.trivedi@readingnook.local | Swati Trivedi | STANDARD | Bramblewick |
+| ritu.pandya@readingnook.local | Ritu Pandya | PREMIUM | Fernhollow |
+| karthik.vyas@readingnook.local | Karthik Vyas | STANDARD | Mistgrove |
 ---
 
 ## Seeded Data Overview

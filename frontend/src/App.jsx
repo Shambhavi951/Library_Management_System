@@ -7,7 +7,6 @@ import Catalog from './pages/Catalog.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import DataPage from './pages/DataPage.jsx';
 import Layout from './components/Layout.jsx';
-import Membership from './pages/Membership.jsx';
 import Protected from './components/Protected.jsx';
 import { useAuth } from './context/authStore.js';
 
@@ -35,7 +34,15 @@ const SettingsRoute = () => {
 const MembersRoute = () => {
   const { user } = useAuth();
   const endpoint = user?.role_type === 'OWNER' ? '/owner/members' : '/admin/members';
-  return <DataPage title="Manage Members" endpoint={endpoint} columns={['member_id', 'first_name', 'last_name', 'email', 'phone_number', 'plan_name', 'home_branch_name', 'preferred_branch_name', 'password_hash']} form={memberForm} actionLabel="Create Member" />;
+  return <DataPage title="Manage Members" endpoint={endpoint} columns={['member_id', 'first_name', 'last_name', 'email', 'phone_number', 'plan_name', 'home_branch_name', 'password_hash']} form={memberForm} actionLabel="Create Member" />;
+};
+
+const TransfersRoute = () => {
+  const { user } = useAuth();
+  return <DataPage title="Transfers" endpoint="/member/transfers"
+    columns={transferCols}
+    form={user?.plan_name === 'PREMIUM' ? transferForm : null}
+    actionLabel="Request Transfer" />;
 };
 
 export default function App() {
@@ -50,42 +57,40 @@ export default function App() {
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/borrow-center" element={<DataPage title="Borrow Center" endpoint="/member/history" columns={['borrow_id', 'title', 'branch_name', 'borrow_status', 'due_date', 'fine_amount']} />} />
         <Route path="/reservations" element={<DataPage title="Reservation Center" endpoint="/member/reservations" columns={memberCols} />} />
-        <Route path="/transfers" element={<DataPage title="Transfers" endpoint="/member/transfers" columns={transferCols} form={transferForm} actionLabel="Request Transfer" noEdit />} />
+        <Route path="/transfers" element={<TransfersRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
-        <Route path="/reading-lists" element={<DataPage title="Reading Lists" endpoint="/member/reading-lists" columns={['reading_list_id', 'list_name', 'visibility_status', 'item_count']} form={readingListForm} actionLabel="Create List" noEdit />} />
-        <Route path="/reviews" element={<DataPage title="Reviews" endpoint="/member/reviews" columns={['review_id', 'publication_id', 'rating_value', 'review_text']} form={reviewForm} actionLabel="Submit Review" noEdit />} />
-        <Route path="/acquisition-requests" element={<DataPage title="Acquisition Requests" endpoint="/member/acquisitions" columns={acqCols} form={acquisitionForm} actionLabel="Request Title" noEdit />} />
+        <Route path="/reading-lists" element={<DataPage title="Reading Lists" endpoint="/member/reading-lists" columns={['reading_list_id', 'list_name', 'visibility_status', 'item_count']} form={readingListForm} actionLabel="Create List" />} />
+        <Route path="/reviews" element={<DataPage title="Reviews" endpoint="/member/reviews" columns={['review_id', 'publication_id', 'rating_value', 'review_text']} form={reviewForm} actionLabel="Submit Review" />} />
+        <Route path="/acquisition-requests" element={<DataPage title="Acquisition Requests" endpoint="/member/acquisitions" columns={acqCols} form={acquisitionForm} actionLabel="Request Title" />} />
         <Route path="/fines" element={<DataPage title="Fines" endpoint="/member/fines" columns={['borrow_id', 'title', 'fine_amount', 'borrow_status', 'due_date']} />} />
         <Route path="/history" element={<DataPage title="History" endpoint="/member/history" columns={['borrow_id', 'title', 'branch_name', 'borrowed_date', 'returned_date', 'borrow_status', 'fine_amount']} />} />
-        <Route path="/membership" element={<Membership />} />
+        <Route path="/membership" element={<DataPage title="Membership Upgrade" endpoint="/member/upgrade" columns={[]} form={upgradeForm} actionLabel="Update Plan" />} />
         <Route path="/profile" element={<DataPage title="Profile" endpoint="/auth/me" columns={['email', 'role_type', 'branch_name', 'plan_name']} />} />
         <Route path="/inventory" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Inventory Management" endpoint="/admin/inventory" columns={inventoryCols} form={copyForm} actionLabel="Add Copy" /></Protected>} />
-        <Route path="/publications" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Publications" endpoint="/admin/publications" columns={['publication_id', 'title', 'publication_year', 'publisher_name', 'language_name', 'isbn', 'page_count']} form={publicationForm} actionLabel="Add Publication" noEdit /></Protected>} />
-        <Route path="/quality-checks" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Quality Checks" endpoint="/admin/quality-checks" columns={inventoryCols} form={qualityForm} actionLabel="Process Check" noEdit /></Protected>} />
-        <Route path="/admin-transfers" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Transfers" endpoint="/admin/transfers" columns={transferCols} form={adminTransferForm} actionLabel="Update Transfer Status" method="PATCH" hideCreateForm /></Protected>} />
-        <Route path="/acquisitions" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Acquisitions" endpoint="/admin/acquisitions" columns={acqCols} form={adminAcquisitionForm} actionLabel="Update Acquisition Status" method="PATCH" hideCreateForm /></Protected>} />
+        <Route path="/publications" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Publications" endpoint="/admin/publications" columns={['publication_id', 'title', 'publication_year', 'publisher_name', 'language_name', 'isbn', 'page_count']} form={publicationForm} actionLabel="Add Publication" /></Protected>} />
+        <Route path="/quality-checks" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Quality Checks" endpoint="/admin/quality-checks" columns={inventoryCols} form={qualityForm} actionLabel="Process Check" /></Protected>} />
+        <Route path="/admin-transfers" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Transfers" endpoint="/admin/transfers" columns={transferCols} /></Protected>} />
+        <Route path="/acquisitions" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Acquisitions" endpoint="/admin/acquisitions" columns={acqCols} /></Protected>} />
         <Route path="/admin-analytics" element={<Protected roles={['ADMIN', 'OWNER']}><DataPage title="Admin Analytics" endpoint="/admin/analytics" columns={['title', 'borrow_count']} /></Protected>} />
         <Route path="/owner-analytics" element={<Protected roles={['OWNER']}><DataPage title="Owner Analytics" endpoint="/owner/analytics" columns={['requested_title', 'request_count']} /></Protected>} />
         <Route path="/admins" element={<Protected roles={['OWNER']}><DataPage title="Manage Admins" endpoint="/owner/admins" columns={['account_id', 'username', 'email', 'branch_name', 'salary_amount', 'password_hash']} form={adminForm} actionLabel="Create Admin" /></Protected>} />
         <Route path="/members" element={<Protected roles={['ADMIN', 'OWNER']}><MembersRoute /></Protected>} />
         <Route path="/settings" element={<Protected roles={['OWNER', 'ADMIN']}><SettingsRoute /></Protected>} />
-        <Route path="/branches" element={<Protected roles={['OWNER']}><DataPage title="Branches" endpoint="/catalog/branches" columns={['branch_id', 'branch_name', 'address_line', 'branch_status']} /></Protected>} />
+        <Route path="/branches" element={<Protected roles={['OWNER']}><DataPage title="Branches" endpoint="/catalog/branches" columns={['branch_id', 'branch_name', 'address_line', 'branch_status']} form={branchForm} actionLabel="Create Branch" /></Protected>} />
       </Route>
     </Routes>
   );
 }
 
-const acquisitionForm = [{ name: 'title', label: 'Title' }, { name: 'author', label: 'Author' }, { name: 'isbn', label: 'ISBN' }, { name: 'preferred_branch_id', label: 'Preferred Branch Id', type: 'number', default: 1 }, { name: 'priority_level', label: 'Priority', options: [{ value: 'LOW', label: 'Low' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }] }];
+const acquisitionForm = [{ name: 'title', label: 'Title' }, { name: 'author', label: 'Author' }, { name: 'isbn', label: 'ISBN' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'priority_level', label: 'Priority', options: [{ value: 'LOW', label: 'Low' }, { value: 'NORMAL', label: 'Normal' }, { value: 'HIGH', label: 'High' }] }];
 const publicationForm = [{ name: 'title', label: 'Title' }, { name: 'publication_year', label: 'Year', type: 'number' }, { name: 'publisher_name', label: 'Publisher' }, { name: 'language_name', label: 'Language', default: 'English' }, { name: 'isbn', label: 'ISBN' }, { name: 'edition_name', label: 'Edition' }, { name: 'page_count', label: 'Pages', type: 'number' }];
 const readingListForm = [{ name: 'list_name', label: 'List Name' }, { name: 'visibility_status', label: 'Visibility', options: [{ value: 'PRIVATE', label: 'Private' }, { value: 'PUBLIC', label: 'Public' }] }];
 const reviewForm = [{ name: 'publication_id', label: 'Publication Id', type: 'number' }, { name: 'rating_value', label: 'Rating', type: 'number' }, { name: 'review_text', label: 'Review' }];
 const upgradeForm = [{ name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }];
 const copyForm = [{ name: 'publication_id', label: 'Publication Id', type: 'number' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'copy_number', label: 'Copy Number', type: 'number', default: 1 }, { name: 'floor_number', label: 'Floor', type: 'number', default: 1 }, { name: 'section_code', label: 'Section', default: 'AI' }, { name: 'shelf_number', label: 'Shelf', default: 'B12' }, { name: 'rack_number', label: 'Rack', default: 'C' }, { name: 'position_number', label: 'Position', default: '4' }];
 const qualityForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'condition', label: 'Condition', options: [{ value: 'GOOD', label: 'Good' }, { value: 'FAIR', label: 'Fair' }, { value: 'DAMAGED', label: 'Damaged' }, { value: 'LOST', label: 'Lost' }] }, { name: 'remarks', label: 'Remarks' }];
-const transferForm = [{ name: 'copy_id', label: 'Copy Id', type: 'number' }, { name: 'destination_branch_id', label: 'Destination Branch Id', type: 'number' }];
+const transferForm = [{ name: 'publication_id', label: 'Book Title' }, { name: 'source_branch_id', label: 'Transfer From Branch' }];
 const adminForm = [{ name: 'username', label: 'Username' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'password', label: 'Password', type: 'password' }, { name: 'branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'salary_amount', label: 'Salary', type: 'number' }, { name: 'hire_date', label: 'Hire Date', type: 'date' }];
-const memberForm = [{ name: 'first_name', label: 'First Name' }, { name: 'last_name', label: 'Last Name' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'phone_number', label: 'Phone' }, { name: 'home_branch_id', label: 'Home Branch Id', type: 'number', default: 1 }, { name: 'preferred_branch_id', label: 'Preferred Branch Id', type: 'number', default: 1 }, { name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }, { name: 'password', label: 'Password', type: 'password' }];
+const memberForm = [{ name: 'first_name', label: 'First Name' }, { name: 'last_name', label: 'Last Name' }, { name: 'email', label: 'Email', type: 'email' }, { name: 'phone_number', label: 'Phone' }, { name: 'home_branch_id', label: 'Branch Id', type: 'number', default: 1 }, { name: 'plan_name', label: 'Plan', options: [{ value: 'STANDARD', label: 'Standard' }, { value: 'PREMIUM', label: 'Premium' }] }, { name: 'password', label: 'Password', type: 'password' }];
 const settingsForm = [{ name: 'fine_per_day', label: 'Fine Per Day', type: 'number' }, { name: 'premium_membership_cost', label: 'Premium Cost', type: 'number' }, { name: 'standard_membership_cost', label: 'Standard Cost', type: 'number' }, { name: 'standard_hold_hours', label: 'Standard Hold Hours', type: 'number' }, { name: 'premium_hold_hours', label: 'Premium Hold Hours', type: 'number' }];
-
-const adminTransferForm = [{ name: 'transfer_status', label: 'Transfer Status', options: [{ value: 'REQUESTED', label: 'Requested' }, { value: 'APPROVED', label: 'Approved' }, { value: 'IN_TRANSIT', label: 'In Transit' }, { value: 'ARRIVED', label: 'Arrived' }, { value: 'SHELVED', label: 'Shelved' }, { value: 'READY_FOR_PICKUP', label: 'Ready for Pickup' }] }];
-const adminAcquisitionForm = [{ name: 'request_status', label: 'Request Status', options: [{ value: 'REQUESTED', label: 'Requested' }, { value: 'UNDER_REVIEW', label: 'Under Review' }, { value: 'ORDERED', label: 'Ordered' }, { value: 'ARRIVED', label: 'Arrived' }, { value: 'CATALOGED', label: 'Cataloged' }, { value: 'AVAILABLE', label: 'Available' }, { value: 'REJECTED', label: 'Rejected' }] }];
+const branchForm = [{ name: 'branch_name', label: 'Branch Name' }, { name: 'address_line', label: 'Address' }, { name: 'contact_number', label: 'Contact Number' }];

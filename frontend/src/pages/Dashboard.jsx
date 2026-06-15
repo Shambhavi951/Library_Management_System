@@ -1,171 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Topbar from '../components/Topbar.jsx';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/authStore.js';
 import { displayBranch } from '../utils/branches.js';
-
-// ── Event date helpers ──────────────────────────────────────────
-function nextEvenFriday(from = new Date()) {
-  // Even Fridays = 2nd and 4th Friday of the month
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
-  // advance to next day so "today" counts only if it hasn't passed
-  d.setDate(d.getDate() + 1);
-  while (true) {
-    if (d.getDay() === 5) { // Friday
-      // which Friday of the month?
-      const weekNum = Math.ceil(d.getDate() / 7);
-      if (weekNum === 2 || weekNum === 4) return new Date(d);
-    }
-    d.setDate(d.getDate() + 1);
-  }
-}
-
-function nextFirstSunday(from = new Date()) {
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 1);
-  while (true) {
-    if (d.getDay() === 0 && d.getDate() <= 7) return new Date(d);
-    d.setDate(d.getDate() + 1);
-  }
-}
-
-function nextThirdSaturday(from = new Date()) {
-  const d = new Date(from);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 1);
-  while (true) {
-    if (d.getDay() === 6) {
-      const weekNum = Math.ceil(d.getDate() / 7);
-      if (weekNum === 3) return new Date(d);
-    }
-    d.setDate(d.getDate() + 1);
-  }
-}
-
-const FMT = { weekday: 'long', month: 'long', day: 'numeric' };
-const fmt = (d) => d.toLocaleDateString(undefined, FMT);
-
-const EVENTS = [
-  {
-    tag: 'WORKSHOP',
-    icon: '✒️',
-    title: 'Creative Writing Workshop',
-    blurb: 'Sharpen your prose with guided prompts and peer feedback. All skill levels welcome.',
-    time: '4:00 PM – 6:00 PM',
-    getNext: nextEvenFriday,
-    accent: 'var(--green-deep)',
-    accentSoft: 'rgba(45,74,50,.10)',
-  },
-  {
-    tag: 'BOOK CLUB',
-    icon: '📖',
-    title: 'Monthly Book Club',
-    blurb: 'Join fellow readers for an open discussion on this month\'s featured title. Tea provided.',
-    time: '11:00 AM – 1:00 PM',
-    getNext: nextFirstSunday,
-    accent: 'var(--brown-deep)',
-    accentSoft: 'rgba(58,36,17,.09)',
-  },
-  {
-    tag: 'TRIVIA NIGHT',
-    icon: '🏆',
-    title: 'Literary Trivia Night',
-    blurb: 'Test your knowledge of authors, plots, and literary history. Prizes for top scorers!',
-    time: '6:30 PM – 8:30 PM',
-    getNext: nextThirdSaturday,
-    accent: 'var(--rust)',
-    accentSoft: 'rgba(138,59,34,.09)',
-  },
-];
-
-function EventsCarousel() {
-  const [idx, setIdx] = useState(0);
-  const timerRef = useRef(null);
-
-  const startTimer = () => {
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setIdx(i => (i + 1) % EVENTS.length), 5000);
-  };
-
-  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
-
-  const go = (n) => { setIdx((idx + n + EVENTS.length) % EVENTS.length); startTimer(); };
-
-  const ev = EVENTS[idx];
-  const nextDate = ev.getNext();
-
-  return (
-    <div style={{
-      background: ev.accentSoft,
-      border: `1px solid ${ev.accent}`,
-      borderRadius: '2px',
-      padding: '22px 26px',
-      marginBottom: '28px',
-      position: 'relative',
-      overflow: 'hidden',
-      transition: 'background .4s, border-color .4s',
-    }}>
-      {/* decorative side stripe */}
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: ev.accent, borderRadius: '2px 0 0 2px' }} />
-
-      {/* header row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '22px', lineHeight: 1 }}>{ev.icon}</span>
-          <div>
-            <div style={{ fontFamily: 'var(--font-caps)', fontSize: '10px', letterSpacing: '.3em', color: ev.accent, marginBottom: '2px' }}>
-              UPCOMING EVENT · {ev.tag}
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '22px', color: 'var(--brown-deep)', lineHeight: 1 }}>
-              {ev.title}
-            </div>
-          </div>
-        </div>
-
-        {/* nav arrows */}
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-          <button onClick={() => go(-1)} style={{ background: 'none', border: `1px solid ${ev.accent}`, color: ev.accent, width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-          <button onClick={() => go(1)}  style={{ background: 'none', border: `1px solid ${ev.accent}`, color: ev.accent, width: '28px', height: '28px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
-        </div>
-      </div>
-
-      {/* body */}
-      <p style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--ink-soft)', fontStyle: 'italic', lineHeight: 1.5 }}>
-        {ev.blurb}
-      </p>
-
-      {/* meta row */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '18px' }}>
-          <span style={{ fontFamily: 'var(--font-caps)', fontSize: '10px', letterSpacing: '.2em', color: 'var(--ink)' }}>
-            📅 {fmt(nextDate)}
-          </span>
-          <span style={{ fontFamily: 'var(--font-caps)', fontSize: '10px', letterSpacing: '.2em', color: 'var(--ink)' }}>
-            🕓 {ev.time}
-          </span>
-        </div>
-        <span style={{ fontFamily: 'var(--font-body)', fontSize: '11px', fontStyle: 'italic', color: ev.accent, cursor: 'default' }}>
-          Contact the front desk for details →
-        </span>
-      </div>
-
-      {/* dot indicators */}
-      <div style={{ display: 'flex', gap: '6px', marginTop: '14px' }}>
-        {EVENTS.map((_, i) => (
-          <button key={i} onClick={() => { setIdx(i); startTimer(); }} style={{
-            width: i === idx ? '20px' : '8px', height: '8px',
-            borderRadius: '4px', border: 'none', cursor: 'pointer',
-            background: i === idx ? ev.accent : 'var(--parchment-3)',
-            padding: 0, transition: 'width .3s, background .3s'
-          }} />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default function Dashboard() {
   const user = useAuth((s) => s.user);
@@ -206,6 +44,12 @@ export default function Dashboard() {
       setLoading(false);
     }
   }
+
+  const refreshMe = useAuth((s) => s.refreshMe);
+
+  useEffect(() => {
+    refreshMe();
+  }, []);
 
   useEffect(() => {
     loadDashboardData();
@@ -259,7 +103,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Library Pulse */}
+        {/* Pulse Bulletin banner */}
         <div className="pulse-bulletin">
           <div className="pulse-bulletin-title">LIBRARY PULSE</div>
           <div className="pulse-bulletin-body">
@@ -267,10 +111,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Upcoming Events Carousel */}
-        <EventsCarousel />
-
-
+        {/* Stat Cards */}
         <section className="stat-grid">
           {stats.map((s, idx) => (
             <div 
@@ -408,6 +249,11 @@ export default function Dashboard() {
                   <span className="card-dotted-label">HOME BRANCH</span>
                   <div className="card-dotted-line"></div>
                   <span className="card-dotted-value">{homeBranchName}</span>
+                </div>
+                <div className="card-dotted-row">
+                  <span className="card-dotted-label">PREFERRED BRANCH</span>
+                  <div className="card-dotted-line"></div>
+                  <span className="card-dotted-value">{displayBranch(user.branch_name)}</span>
                 </div>
                 <div className="card-dotted-row">
                   <span className="card-dotted-label">CORRESPONDENCE</span>

@@ -456,9 +456,7 @@ CREATE TABLE branch_transfers (
 
     requested_date DATETIME,
 
-    arrival_date DATETIME,
-
-    requested_by_member_id INT
+    arrival_date DATETIME
 );
 
 /* Acquisition requests */
@@ -499,8 +497,6 @@ CREATE TABLE notifications (
     message_body VARCHAR(1000),
 
     read_status CHAR(1),
-
-    branch_id INT,
 
     created_date DATETIME
 );

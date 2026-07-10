@@ -1,12 +1,12 @@
-# 📚 The Reading Nook
+# The Reading Nook
 
-🚀 **Live Deployed App**: [https://library-management-system-qyp2.onrender.com](https://library-management-system-qyp2.onrender.com)
+**Live Deployed App**: [https://library-management-system-qyp2.onrender.com](https://library-management-system-qyp2.onrender.com)
 
 A complete full-stack **multi-branch intelligent library management platform** built with React, Express, and Microsoft SQL Server.
 
 ---
 
-## 🗂️ Table of Contents
+## Table of Contents
 
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
@@ -142,7 +142,7 @@ npm run dev
 
 ---
 
-## 🌐 Production Cloud Hosting Setup
+## Production Cloud Hosting Setup
 
 To deploy the application live on the web, follow these steps:
 
@@ -350,13 +350,13 @@ Each book gets **1–3 physical copies per branch** based on popularity score (~
 
 ### Pre-seeded Activity
 
-- ✅ **19 returned borrows** (with history) — some with overdue fines
-- 📖 **19 active borrows** — 4 are currently overdue
-- 📌 **5 book holds** ready for pickup (ON_HOLD)
-- ⏳ **3 queued reservations** (waiting for Clean Code and Dune)
-- 🚚 **4 branch transfers** (REQUESTED / IN_TRANSIT / SHELVED)
-- 🔍 **2 quality checks** logged
-- 📋 **Several acquisition requests** from members
+- **19 returned borrows** (with history) — some with overdue fines
+- **19 active borrows** — 4 are currently overdue
+- **5 book holds** ready for pickup (ON_HOLD)
+- **3 queued reservations** (waiting for Clean Code and Dune)
+- **4 branch transfers** (REQUESTED / IN_TRANSIT / SHELVED)
+- **2 quality checks** logged
+- **Several acquisition requests** from members
 
 ---
 
@@ -460,18 +460,18 @@ Base URL: `http://localhost:4000`
 
 ## Key Features
 
-- 🔐 **JWT auth** with access + refresh token rotation
-- 📚 **Multi-branch catalog** with per-branch inventory tracking
-- ⏳ **Reservation queue** with automatic hold promotion on return
-- 📌 **Book holds** with expiry tracking
-- 🚚 **Cross-branch transfers** with status pipeline (REQUESTED → IN_TRANSIT → ARRIVED → SHELVED)
-- 📋 **Acquisition requests** — member-driven procurement pipeline
-- 🔔 **In-app notifications** for members and admins at every stage
-- 💰 **Fine system** — auto-calculated on return (₹25/day, configurable by owner)
-- 🔍 **Quality checks** — copy condition tracking with maintenance flags
-- ⭐ **Reviews & Reading Lists** for members
-- 📊 **Analytics dashboard** for admins and owner
-- 👑 **PREMIUM membership** — higher borrow limits, cross-branch switching, priority queues
+- **JWT auth** with access + refresh token rotation
+- **Multi-branch catalog** with per-branch inventory tracking
+- **Reservation queue** with automatic hold promotion on return
+- **Book holds** with expiry tracking
+- **Cross-branch transfers** with status pipeline (REQUESTED → IN_TRANSIT → ARRIVED → SHELVED)
+- **Acquisition requests** — member-driven procurement pipeline
+- **In-app notifications** for members and admins at every stage
+- **Fine system** — auto-calculated on return (₹25/day, configurable by owner)
+- **Quality checks** — copy condition tracking with maintenance flags
+- **Reviews & Reading Lists** for members
+- **Analytics dashboard** for admins and owner
+- **PREMIUM membership** — higher borrow limits, cross-branch switching, priority queues
 
 ---
 
@@ -484,7 +484,7 @@ Base URL: `http://localhost:4000`
 3. Go to **Acquisitions** → Progress status: `REQUESTED → UNDER_REVIEW → ORDERED → ARRIVED → CATALOGED → AVAILABLE`
 4. Login back as the member → Check **Notifications** → See: *"[Book title] is now available at the library!"*
 
-### 💰 Scenario 2: Fine System
+### Scenario 2: Fine System
 
 Pre-seeded overdue members to test with (all password: `MemberPass!2026`):
 
@@ -534,6 +534,6 @@ Visual language defined in `frontend/src/styles/antique.css` and `frontend/src/s
 | Reservation limit | 5 | 15 |
 | Hold duration | 24 hours | 72 hours |
 | Queue priority | Normal | High |
-| Cross-branch borrowing | ❌ | ✅ |
-| Switch preferred branch | ❌ | ✅ |
+| Cross-branch borrowing | No | Yes |
+| Switch preferred branch | No | Yes |
 | Reading lists | 1 | 10 |

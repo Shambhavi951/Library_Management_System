@@ -477,7 +477,7 @@ Base URL: `http://localhost:4000`
 
 ## Test Scenarios
 
-### 📋 Scenario 1: Acquisition Request → Procurement → Member Alert
+### Scenario 1: Acquisition Request → Procurement → Member Alert
 
 1. Login as `member@readingnook.local` → Submit an acquisition request (e.g., a book not in the catalog)
 2. Login as `fern.admin@readingnook.local` → Check **Notifications** → See `NEW_ACQUISITION_REQUEST`
